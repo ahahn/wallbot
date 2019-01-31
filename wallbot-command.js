@@ -75,14 +75,6 @@ replServer.defineCommand('pendown',{
 		sendCommand("d");
 	}
 });
-replServer.defineCommand('fillareaarctest',{
-	help: 'Test filling an area by arcs',
-	action() {
-		console.log('buffering fill area arc commands');
-		fillAreaArcTest();
-		sendCommand(commandList.shift());
-	}
-});
 replServer.defineCommand('testangles',{
 	help: 'Test angle functions',
 	action() {
@@ -407,14 +399,6 @@ function changeLeft(steps) {
 	leftLength += steps;
 	sendCommand('l ' + steps);
 }
-replServer.defineCommand('fillareatest',{
-	help: 'Test fill area process',
-	action(dist) {
-		console.log('buffering fill area commands');
-		fillAreaTest();
-		sendCommand(commandList.shift());
-	}
-});
 port.on("open", function () {
     console.log('Serial port connected');
 });
@@ -615,18 +599,6 @@ function getDistanceToTargetX(radius, distance, targetX) {
   console.log(" to ");
   console.log(useDistance);
   return useDistance;
-}
-function fillArea(space) {
-  var rightLength = sqrt(sq(long(canvasWidth) / 2)+sq(long(canvasHeight) /2));
-  var leftLength = sqrt(sq(long(canvasWidth) / 2)+sq(long(canvasHeight) /2));
-  console.log("rightLength ");
-  console.log(rightLength);
-  console.log("leftLength ");
-  console.log(leftLength);
-  var targetX = curX;
-  var dist = getDistanceToTargetX((leftLength * mmFactor)+stepsLeft,80,(canvasWidth/2)-8);
-  console.log("got dist ");
-  console.log(dist);
 }
 var letterH = {"width":8,"height":8,points:[
 [1,1,0,0,0,0,1,1],
@@ -923,218 +895,7 @@ function scaleLetter(letter,scale) {
 	console.log('returning ' + JSON.stringify(returnLetter));
 	return returnLetter;
 }
-function fillAreaBigArcTest() {
-	var lengths = goByArcs(300,300,leftLength,rightLength);
-	lengths = goByArcs(260,300,lengths.leftLength,lengths.rightLength);
-	commandList.push('d');
-	var coords = getCoordsForRightChange(leftRadius, rightRadius, 5);
-	commandList.push('u');
-	lengths = goByArcs(300,300,lengths.leftLength,lengths.rightLength);
-}
-function fillAreaArcTest() {
-	var lengths = goByArcs(300,300,leftLength,rightLength);
-	lengths = goByArcs(260,300,lengths.leftLength,lengths.rightLength);
-	commandList.push('d');
-	lengths = goByArcs(263,300,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,300,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,300,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(273,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(276,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(276,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(273,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(273,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(276,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(276,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(273,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(270,350,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(266,350,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(263,350,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(260,350,lengths.leftLength,lengths.rightLength);
-	commandList.push('u');
-	lengths = goByArcs(280,300,lengths.leftLength,lengths.rightLength);
-	commandList.push('d');
-	lengths = goByArcs(283,300,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,300,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,300,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,303,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,306,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,310,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,313,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,316,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,320,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,323,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,326,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,330,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,333,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,336,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,340,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,343,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,346,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(290,350,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(286,350,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(283,350,lengths.leftLength,lengths.rightLength);
-	lengths = goByArcs(280,350,lengths.leftLength,lengths.rightLength);
 
-	commandList.push('u');
-	lengths = goByArcs(300,300,lengths.leftLength,lengths.rightLength);
-}
-function fillAreaTest() {
-//  fillArea(8);
-	commandList.push('d');
-	commandList.push('r 8');
-
-	commandList.push('l 8');
-	commandList.push('r 8');
-	commandList.push('r -28');
-	commandList.push('l 8');
-	commandList.push('r 32');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -56');
-	commandList.push('l 8');
-	commandList.push('r 60');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -84');
-	commandList.push('l 8');
-	commandList.push('r 88');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -112');
-	commandList.push('l 8');
-	commandList.push('r 116');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -140');
-	commandList.push('l 8');
-	commandList.push('r 144');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -168');
-
-	commandList.push('l 8');
-	commandList.push('r 172');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -196');
-
-	commandList.push('l 8');
-	commandList.push('r 200');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -224');
-
-	commandList.push('l 8');
-	commandList.push('r 228');
-	commandList.push('l 8');
-	commandList.push('r 12');
-	commandList.push('r -256');
-
-	commandList.push('u');
-
-}
 function outputPreviewHeader() {
 	previewWriteStream.write('<html>','ascii');
 previewWriteStream.write('<head>','ascii');
