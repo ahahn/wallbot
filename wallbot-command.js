@@ -1,5 +1,6 @@
 const repl = require('repl');
 const fs = require('fs');
+const letters = require('./letters.js');
 const SerialPort = require('serialport')
 const Readline = SerialPort.parsers.Readline
 const due = '/dev/cu.usbserial-A9007RfU'
@@ -12,7 +13,7 @@ const replServer = repl.start({ prompt: '> '});
 var commandList = [];
 
 var previewWriteStream;
-var useLetter = letterH;
+var useLetter = letters.letterH;
 var scale = 1;
 
 const mmFactor = 5;
@@ -185,7 +186,7 @@ replServer.defineCommand('scaletest',{
 	help: 'Test scaling a letter',
 	action() {
 		console.log('scaling letter');
-		scaleLetter(letterH, 2);
+		scaleLetter(letters.letterH, 2);
 	}
 });
 function optimizePaths(segments) {
@@ -328,9 +329,9 @@ replServer.defineCommand('useletter',{
 	help: 'Set letter to draw',
 	action(params) {
 		if (params === 'letterH_hollow') {
-			useLetter = letterH_hollow;
+			useLetter = letters.letterH_hollow;
 		} else {
-			useLetter = letterH;
+			useLetter = letters.letterH;
 		} 
 	}
 });
@@ -600,100 +601,6 @@ function getDistanceToTargetX(radius, distance, targetX) {
   console.log(useDistance);
   return useDistance;
 }
-var letterH = {"width":8,"height":8,points:[
-[1,1,0,0,0,0,1,1],
-[1,1,0,0,0,0,1,1],
-[1,1,0,0,0,0,1,1],
-[1,1,1,1,1,1,1,1],
-[1,1,1,1,1,1,1,1],
-[1,1,0,0,0,0,1,1],
-[1,1,0,0,0,0,1,1],
-[1,1,0,0,0,0,1,1],
-]};
-var lineLetters = [
-{"letter":"H","width":4,"height":8,"startingPoint":{"X":0,"Y":0},"lines":[
-{"X":0,"Y":8},
-{"X":0,"Y":-4,"up":1},
-{"X":4,"Y":0},
-{"X":0,"Y":4,"up":1},
-{"X":0,"Y":-8},
-]},
-{"letter":"e","width":4,"height":8,"startingPoint":{"X":4,"Y":8},"lines":[
-{"X":-4,"Y":0},
-{"X":0,"Y":-4},
-{"X":4,"Y":0},
-{"X":0,"Y":2},
-{"X":-4,"Y":0},
-{"X":4,"Y":-6,"up":1}
-]},
-{"letter":"o","width":4,"height":8,"startingPoint":{"X":0,"Y":4},"lines":[
-{"X":4,"Y":0},
-{"X":0,"Y":4},
-{"X":-4,"Y":0},
-{"X":0,"Y":-4},
-{"X":4,"Y":-4,"up":1}
-]},
-{"letter":"l","width":1,"height":8,"startingPoint":{"X":0,"Y":0},"lines":[
-{"X":.5,"Y":0},
-{"X":0,"Y":8},
-{"X":.5,"Y":0},
-{"X":0,"Y":-8,"up":1},
-]},
-];
-var letterH_hollow = {"width":12,"height":16,points:[
-[1,1,1,1,0,0,0,0,1,1,1,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,1,1,1,1,1,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,1,1,1,1,1,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,1,0,0,1],
-[1,1,1,1,0,0,0,0,1,1,1,1],
-]};
-var letterH_hollow_16 = {"width":16,"height":16,points:[
-[1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-[1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
-[1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1],
-]};
-var emojiPoo = {"width":16,"height":16,points:[
-[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,],
-[0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,],
-[0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,],
-[0,0,0,0,0,1,1,1,0,0,0,1,1,0,0,0,],
-[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,],
-[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,],
-[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,],
-[0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,],
-[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,],
-[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,],
-[0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,],
-[0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,],
-[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,],
-[0,1,0,0,0,0,1,1,0,0,0,0,0,0,1,0,],
-[0,0,1,1,1,1,0,0,1,1,1,1,1,1,0,0,],
-]};
 function sliceLetter(scale,spacing) {
 	var segments = [];
 	var letter = scaleLetter(useLetter,scale);
