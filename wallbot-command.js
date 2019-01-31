@@ -27,6 +27,8 @@ var canvasHeight = 700;
 var yFactor =  .18;
 var curX = Math.round(canvasWidth/2);
 var curY = Math.round(canvasHeight/2);
+var test = false;
+var debug = false;
 
 var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
@@ -115,6 +117,18 @@ replServer.defineCommand('scale',{
 		scale = c[0];
 	}
 });
+replServer.defineCommand('mode',{
+	help: 'Set operating mode to test, debug or real',
+	action(message) {
+		if (message.trim().toLowerCase() == 'test') test = true;
+		else if (message.trim().toLowerCase() == 'debug') debug = true;
+		else {
+			test = false;
+			debug = false;
+		}
+		console.log('test is ' + test + ' debug is ' + debug);
+	}
+});
 replServer.defineCommand('write',{
 	help: 'Write the text as line letters',
 	action(message) {
@@ -192,9 +206,11 @@ function optimizePaths(segments) {
 	var nextStartRight = -1;
 	while (segments.length > 0) {
 		finalPaths.push(current);
-		console.log('current segment is ' + JSON.stringify(current));
-		console.log('finalPaths is length ' + finalPaths.length);
-		console.log('startRight is ' + startRight);
+		if (debug) {
+			console.log('current segment is ' + JSON.stringify(current));
+			console.log('finalPaths is length ' + finalPaths.length);
+			console.log('startRight is ' + startRight);
+		}
 		shortest = Number.MAX_SAFE_INTEGER;
 		shortestIndex = -1;
 		nextStartRight = -1;
@@ -353,8 +369,8 @@ replServer.defineCommand('lettertest',{
 
 		leftLength = startLeft;
 		rightLength = startRight;
-		drawSegmentsUnidirectional(finalSegments);
-		// drawSegments(finalSegments);
+		// drawSegmentsUnidirectional(finalSegments);
+		drawSegments(finalSegments);
 
 		// drawSegments(firstSegments);
 		// while (oneCommand = commandList.shift()) {
@@ -363,12 +379,14 @@ replServer.defineCommand('lettertest',{
 		// changeLeft(60);
 		// changeRight(60);
 		// drawSegments(secondSegments);
-		var c = commandList.shift();
-		while (c.startsWith("#")) {
-			console.log(c);
-			c = commandList.shift();
+		if (!test) {
+			var c = commandList.shift();
+			while (c.startsWith("#")) {
+				console.log(c);
+				c = commandList.shift();
+			}
+			sendCommand(c);
 		}
-		sendCommand(c);
 	}
 });
 replServer.defineCommand('left',{
@@ -421,7 +439,9 @@ parser.on('data', function(data) {
 					console.log(c);
 					c = commandList.shift();
 				}
-				sendCommand(c);
+				if (!test) {
+					sendCommand(c);
+				}
 			}
 		} else {
 			console.log('Read json response:',JSON.stringify(response));
@@ -608,7 +628,7 @@ function fillArea(space) {
   console.log("got dist ");
   console.log(dist);
 }
-var letterH = {"width":8,"height":8,"yFactor":.09,points:[
+var letterH = {"width":8,"height":8,points:[
 [1,1,0,0,0,0,1,1],
 [1,1,0,0,0,0,1,1],
 [1,1,0,0,0,0,1,1],
@@ -648,7 +668,7 @@ var lineLetters = [
 {"X":0,"Y":-8,"up":1},
 ]},
 ];
-var letterH_hollow = {"width":12,"height":16,"yFactor":.18,points:[
+var letterH_hollow = {"width":12,"height":16,points:[
 [1,1,1,1,0,0,0,0,1,1,1,1],
 [1,0,0,1,0,0,0,0,1,0,0,1],
 [1,0,0,1,0,0,0,0,1,0,0,1],
@@ -706,6 +726,8 @@ function sliceLetter(scale,spacing) {
 	var segments = [];
 	var letter = scaleLetter(useLetter,scale);
 	console.log('letter X length ' + letter.points[0].length + ' Y length ' + letter.points.length);
+	if (debug)
+	console.log('cur X ' + curX + ' curY ' + curY);
 	// console.log('letter 0 0 is ' + letter.points[0][0]);
 	var firstX = curX;
 	var firstY = curY;
@@ -713,13 +735,39 @@ function sliceLetter(scale,spacing) {
 	var lastY = curY + letter.points.length;
 	// console.log('lastX ' + lastX + ' lastY ' + lastY);
 	var lastLengths = getLengthsForCoords(lastX * mmFactor, lastY * mmFactor);
-	// console.log('lastlengths ' + JSON.stringify(lastLengths));
+	if (test) {
+		console.log('lastlengths ' + JSON.stringify(lastLengths));
+		console.log('leftLength ' + leftLength +' rightLength ' + rightLength);
+	}
 
 	var segment = 0;
-	while ((leftLength <= lastLengths.leftLength)||(rightLength <= lastLengths.rightLength)) {
+	while (leftLength <= lastLengths.leftLength) {
 		var newCoords = getCoordsForRightChange(leftLength, rightLength,0);
 		var newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
 		var newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+		var changes = 0;
+		while ((changes < 10)&& ((newY < 0)||(newY >= letter.points.length))) {
+			changes++;
+			if (debug)
+			console.log('adjusting from newX ' + newX + ' newY ' + newY);
+			if (leftLength <= lastLengths.leftLength) {
+				if (newY < 0) {
+					rightLength += spacing;
+					if (debug)
+					console.log('increased rightLength to ' + rightLength);
+				}
+				if (newY >= letter.points.length) {
+					rightLength -= spacing / 4;
+					if (debug)
+					console.log('decreased rightLength to ' + rightLength);
+				}
+			}
+			newCoords = getCoordsForRightChange(leftLength, rightLength,0);
+			newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
+			newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+			if (debug)
+			console.log('adjusted newX ' + newX + ' newY ' + newY);
+		}
 		// console.log('checking for coords ' + Math.round(newCoords.X/mmFactor) + ' ' + Math.round(newCoords.Y/mmFactor) + ' (letter ' + newX + ' ' + newY + ')');
 		if ((newX >= 0) &&(newX < letter.points[0].length) && (newY >= 0) && (newY < letter.points.length)) {
 			console.log('processing Y ' + newY + ' X ' + newX);
@@ -797,6 +845,11 @@ function sliceLetter(scale,spacing) {
 		// leftLength += spacing;
 		// rightLength += Math.round(spacing * letter.yFactor);
 		} else {
+			console.log('out of x y bounds');
+			console.log('lastlengths ' + JSON.stringify(lastLengths));
+			console.log('leftLength ' + leftLength +' rightLength ' + rightLength);
+			console.log('newX ' + newX + ' newY ' + newY);
+
 			// done!
 			break;
 			// console.log('breaking');
@@ -832,21 +885,26 @@ function sliceLetter(scale,spacing) {
 	// while (seg = segments.shift()) {
 	// 	console.log('segment: ' + JSON.stringify(seg));
 	// }
-	console.log('done processing letter is ' + JSON.stringify(letter));
+	if (debug) {
+		console.log('done processing letter is ' + JSON.stringify(letter));
+	}
 	return segments;
 }
 function scaleLetter(letter,scale) {
-	console.log('scaling letter ' + JSON.stringify(letter));
+	if (debug) {
+		console.log('scaling letter ' + JSON.stringify(letter));
+	}
 	console.log('scaling by ' + scale);
 	if (scale == 1) {
 		return letter;
 	} else {
 		var returnLetter = {"width": Math.round(letter.width * scale),
-							"height": Math.round(letter.height * scale),
-							"yFactor":letter.yFactor};
+							"height": Math.round(letter.height * scale)};
 		returnLetter.points = new Array(letter.height * scale).fill(0).map(() => new Array(letter.width * scale).fill(0));
 		returnLetter.slicedPoints = new Array(letter.height * scale).fill(0).map(() => new Array(letter.width * scale).fill(0));
-		console.log('returnLetter is ' + JSON.stringify(returnLetter));
+		if (debug) {
+			console.log('returnLetter is ' + JSON.stringify(returnLetter));
+		}
 		var iv = 0;
 		var jv = 0;
 		for (var i = 0; i < letter.height; i++) {
@@ -861,6 +919,7 @@ function scaleLetter(letter,scale) {
 			}
 		}
 	}
+	if (debug)
 	console.log('returning ' + JSON.stringify(returnLetter));
 	return returnLetter;
 }
