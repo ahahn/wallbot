@@ -48,7 +48,8 @@ void goOrigin() {
     }
     step(MOTOR_LEFT, stepsLeft * -1);
     stepsLeft = 0;
-    curX = curY = 0;
+    curX = canvasWidth / 2;
+    curY = canvasHeight / 2;
   }
 }
 long getRightLength(int x, int y) {

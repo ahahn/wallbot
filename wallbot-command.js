@@ -621,11 +621,10 @@ var letterH = {"width":8,"height":8,"yFactor":.09,points:[
 var lineLetters = [
 {"letter":"H","width":4,"height":8,"startingPoint":{"X":0,"Y":0},"lines":[
 {"X":0,"Y":8},
-{"X":0,"Y":-4},
+{"X":0,"Y":-4,"up":1},
 {"X":4,"Y":0},
-{"X":0,"Y":-4},
-{"X":0,"Y":8},
-{"X":0,"Y":-8,"up":1},
+{"X":0,"Y":4,"up":1},
+{"X":0,"Y":-8},
 ]},
 {"letter":"e","width":4,"height":8,"startingPoint":{"X":4,"Y":8},"lines":[
 {"X":-4,"Y":0},
