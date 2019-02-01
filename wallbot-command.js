@@ -76,12 +76,6 @@ replServer.defineCommand('pendown',{
 		sendCommand("d");
 	}
 });
-replServer.defineCommand('testangles',{
-	help: 'Test angle functions',
-	action() {
-		testAngles();
-	}
-});
 replServer.defineCommand('go',{
 	help: 'Move X and Y distance specified',
 	action(coords) {
@@ -329,9 +323,15 @@ replServer.defineCommand('useletter',{
 	help: 'Set letter to draw',
 	action(params) {
 		if (params === 'letterH_hollow') {
-			useLetter = letters.letterH_hollow;
+			useLetter = letters.block_hollow.H;
+		} else if (params === 'letterA') {
+			useLetter = letters.block.A;
+		} else if (params === 'letterA_hollow') {
+			useLetter = letters.block_hollow.A;
+		} else if (params === 'letterH') {
+			useLetter = letters.block.H;
 		} else {
-			useLetter = letters.letterH;
+			useLetter = letters.block.H;
 		} 
 	}
 });
@@ -452,34 +452,6 @@ function sendCommand(command) {
 	port.write(command + "\r");
 }
 
-function testAngles() {
-	console.log('testing right changes');
-	var coords = getCoordsForRightChange(leftLength,rightLength,0);
-	console.log('got coords ' + coords.X + ' ' + coords.Y);
-	var lengths = getLengthsForCoords(coords.X, coords.Y);
-	console.log('leftLength ' + lengths.leftLength + ' rightLength ' + lengths.rightLength);
-	coords = getCoordsForRightChange(leftLength,rightLength,10 * mmFactor);
-	console.log('got coords ' + coords.X + ' ' + coords.Y);
-	lengths = getLengthsForCoords(coords.X, coords.Y);
-	console.log('leftLength ' + lengths.leftLength + ' rightLength ' + lengths.rightLength);
-	coords = getCoordsForRightChange(leftLength,rightLength,-10 * mmFactor);
-	console.log('got coords ' + coords.X + ' ' + coords.Y);
-	lengths = getLengthsForCoords(coords.X, coords.Y);
-	console.log('leftLength ' + lengths.leftLength + ' rightLength ' + lengths.rightLength);
-	console.log('testing left changes');
-	coords = getCoordsForLeftChange(rightLength,leftLength,0);
-	console.log('got coords ' + coords.X + ' ' + coords.Y);
-	lengths = getLengthsForCoords(coords.X, coords.Y);
-	console.log('leftLength ' + lengths.leftLength + ' rightLength ' + lengths.rightLength);
-	coords = getCoordsForLeftChange(rightLength,leftLength,10 * mmFactor);
-	console.log('got coords ' + coords.X + ' ' + coords.Y);
-	lengths = getLengthsForCoords(coords.X, coords.Y);
-	console.log('leftLength ' + lengths.leftLength + ' rightLength ' + lengths.rightLength);
-	coords = getCoordsForLeftChange(rightLength,leftLength,-10 * mmFactor);
-	console.log('got coords ' + coords.X + ' ' + coords.Y);
-	lengths = getLengthsForCoords(coords.X, coords.Y);
-	console.log('leftLength ' + lengths.leftLength + ' rightLength ' + lengths.rightLength);
-}
 function goByArcs(x,y,ll,rl) {
 	var adjustedX = x * mmFactor;
 	var adjustedY = y * mmFactor;
@@ -538,6 +510,46 @@ function getCoordsForRightChange(leftRadius,rightRadius,rightChange) {
   // console.log("y is ");
   // console.log(y);
   return {"X":x,"Y":y};
+ }
+function getAngleForRightLengths(leftRadius,rightRadius,rightRadiusEnd) {
+  // var side = rightChange / 2;
+  // var angle = Math.asin(side/leftRadius);
+  var origSquares = Math.pow(leftRadius,2) + Math.pow(canvasWidth * mmFactor,2) - Math.pow(rightRadius,2);
+  var origCosC = origSquares / (2 * leftRadius * (canvasWidth * mmFactor));
+  var origRadianAngle = Math.acos(origCosC);
+  var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth * mmFactor,2) - Math.pow(rightRadiusEnd,2);
+  var cosC = squares / (2 * leftRadius * (canvasWidth * mmFactor));
+  var radianAngle = Math.acos(cosC);
+  var startAngle;
+  var endAngle;
+  if (origRadianAngle < radianAngle) {
+  	startAngle = origRadianAngle;
+  	endAngle = radianAngle;
+  } else {
+  	startAngle = radianAngle;
+  	endAngle = origRadianAngle;
+  }
+  return {"radius":leftRadius,"origRadianAngle":startAngle,"finalRadianAngle":endAngle};
+ }
+function getAngleForRightChange(leftRadius,rightRadius,rightChange) {
+  // var side = rightChange / 2;
+  // var angle = Math.asin(side/leftRadius);
+  var origSquares = Math.pow(leftRadius,2) + Math.pow(canvasWidth * mmFactor,2) - Math.pow(rightRadius,2);
+  var origCosC = origSquares / (2 * leftRadius * (canvasWidth * mmFactor));
+  var origRadianAngle = Math.acos(origCosC);
+  var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth * mmFactor,2) - Math.pow(rightRadius + rightChange,2);
+  var cosC = squares / (2 * leftRadius * (canvasWidth * mmFactor));
+  var radianAngle = Math.acos(cosC);
+  var startAngle;
+  var endAngle;
+  if (origRadianAngle < radianAngle) {
+  	startAngle = origRadianAngle;
+  	endAngle = radianAngle;
+  } else {
+  	startAngle = radianAngle;
+  	endAngle = origRadianAngle;
+  }
+  return {"radius":leftRadius,"origRadianAngle":startAngle,"finalRadianAngle":endAngle};
  }
 function getCoordsForLeftChange(rightRadius,leftRadius,leftChange) {
   var side = leftChange / 2;
@@ -694,7 +706,12 @@ function sliceLetter(scale,spacing) {
 		            // console.log('got to end of segment');
 		            console.log('startRight ' + startRight + ' end of segment ' + lastRightSpacing);
 		            console.log('absolute startRight ' + (rightLength + startRight) + ' end of segment ' + (rightLength + lastRightSpacing));
-		            segments.push({'segment':segment,'leftLength':leftLength,'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing)});
+					var angles = getAngleForRightLengths(leftLength,rightLength + startRight,rightLength + lastRightSpacing);
+					// var angles = getAngleForRightChange(leftLength,rightLength + startRight,lastRightSpacing);
+					// var angles = getAngleForRightChange(leftLength,rightLength + startRight,(rightLength + startRight) - (rightLength + lastRightSpacing));
+		            segments.push({'segment':segment,'leftLength':leftLength,
+		            	'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing),
+		            	'angles':angles});
 		            segment++;
 		            startRight = NaN;
 		          }
@@ -716,7 +733,13 @@ function sliceLetter(scale,spacing) {
 			if (!isNaN(startRight)) {
 				console.log('startRight ' + startRight + ' endRight ' + endRight);
 				console.log('absolute startRight ' + (rightLength + startRight) + ' endRight ' + (rightLength + endRight));
-	            segments.push({'segment':segment,'leftLength':leftLength,'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing)});
+				var angles = getAngleForRightLengths(leftLength,rightLength + startRight,rightLength + lastRightSpacing);
+				// var angles = getAngleForRightChange(leftLength,rightLength + startRight,lastRightSpacing);
+				// var angles = getAngleForRightChange(leftLength,rightLength + startRight,(rightLength + startRight) - (rightLength + lastRightSpacing));
+				console.log('angles are ' + JSON.stringify(angles));
+	            segments.push({'segment':segment,'leftLength':leftLength,
+	            	'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing),
+	            	'angles':angles});
 	            segment++;
 			}
 			if (leftLength < lastLengths.leftLength) leftLength += spacing;
@@ -805,29 +828,35 @@ function scaleLetter(letter,scale) {
 
 function outputPreviewHeader() {
 	previewWriteStream.write('<html>','ascii');
-previewWriteStream.write('<head>','ascii');
-previewWriteStream.write('</head>','ascii');
-previewWriteStream.write('<body bgcolor="#ffffff">','ascii');
-previewWriteStream.write('<canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;">','ascii');
-previewWriteStream.write('Your browser does not support the HTML5 canvas tag.</canvas>','ascii');
-previewWriteStream.write('<script>','ascii');
-previewWriteStream.write('var c = document.getElementById("myCanvas");','ascii');
+previewWriteStream.write('<head>\r\n','ascii');
+previewWriteStream.write('</head>\r\n','ascii');
+previewWriteStream.write('<body bgcolor="#ffffff">\r\n','ascii');
+previewWriteStream.write('<canvas id="myCanvas" width="' + canvasWidth + '" height="' + canvasHeight + '" style="border:1px solid #d3d3d3;">\r\n','ascii');
+previewWriteStream.write('Your browser does not support the HTML5 canvas tag.</canvas>\r\n','ascii');
+previewWriteStream.write('<script>\r\n','ascii');
+previewWriteStream.write('var c = document.getElementById("myCanvas");\r\n','ascii');
 
-previewWriteStream.write('var segments=[','ascii');
+previewWriteStream.write('var segments=[\r\n','ascii');
 }
 function outputPreviewFooter() {
-	previewWriteStream.write('];','ascii');
-previewWriteStream.write('var ctx = c.getContext("2d");','ascii');
-previewWriteStream.write('ctx.beginPath();','ascii');
-previewWriteStream.write('var seg;','ascii');
-previewWriteStream.write('while (seg = segments.shift()) {','ascii');
-previewWriteStream.write('console.log(\'drawing segment for \' + JSON.stringify(seg));','ascii');
-previewWriteStream.write('ctx.moveTo((seg.leftLength/5)-300,(seg.rightLengthStart / 5)-300);','ascii');
-previewWriteStream.write('ctx.lineTo((seg.leftLength / 5)-300,(seg.rightLengthEnd / 5)-300);','ascii');
-previewWriteStream.write('ctx.stroke();','ascii');
-previewWriteStream.write('}','ascii');
-previewWriteStream.write('ctx.stroke();','ascii');
-previewWriteStream.write('</script>','ascii');
-previewWriteStream.write('</body>','ascii');
-previewWriteStream.write('</html>','ascii');
+	previewWriteStream.write('];\r\n','ascii');
+previewWriteStream.write('var ctx = c.getContext("2d");\r\n','ascii');
+previewWriteStream.write('ctx.beginPath();\r\n','ascii');
+previewWriteStream.write('var seg;\r\n','ascii');
+previewWriteStream.write('while (seg = segments.shift()) {\r\n','ascii');
+previewWriteStream.write('console.log(\'drawing segment for \' + JSON.stringify(seg));\r\n','ascii');
+previewWriteStream.write('if (seg.angles) {\r\n','ascii');
+previewWriteStream.write('ctx.beginPath();\r\n','ascii');
+previewWriteStream.write('ctx.arc(0,0,(seg.leftLength/5),seg.angles.origRadianAngle,seg.angles.finalRadianAngle);\r\n','ascii');
+previewWriteStream.write('ctx.stroke();\r\n','ascii');
+previewWriteStream.write('} else {	\r\n','ascii');
+previewWriteStream.write('ctx.moveTo((seg.leftLength/5)-300,(seg.rightLengthStart / 5)-300);\r\n','ascii');
+previewWriteStream.write('ctx.lineTo((seg.leftLength / 5)-300,(seg.rightLengthEnd / 5)-300);\r\n','ascii');
+previewWriteStream.write('ctx.stroke();\r\n','ascii');
+previewWriteStream.write('}\r\n','ascii');
+previewWriteStream.write('}\r\n','ascii');
+previewWriteStream.write('ctx.stroke();\r\n','ascii');
+previewWriteStream.write('</script>\r\n','ascii');
+previewWriteStream.write('</body>\r\n','ascii');
+previewWriteStream.write('</html>\r\n','ascii');
 }
