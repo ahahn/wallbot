@@ -844,9 +844,9 @@ function scaleLetter(letter,scale) {
 								console.log('recursing');
 							} else {
 								let startX = (subx==0)?0:Math.round(scale/2);
-								let endX = (subx==0)?Math.round(scale/2)-1:scale-1;
+								let endX = (subx==0)?Math.round(scale/2):scale;
 								let startY = (suby==0)?0:Math.round(scale/2);
-								let endY = (suby==0)?Math.round(scale/2)-1:scale-1;
+								let endY = (suby==0)?Math.round(scale/2):scale;
 								console.log('startX ' + startX + ' endX ' + endX + ' startY ' + startY + ' endY '+ endY);
 								for (var sx=startX;sx<endX;sx++) {
 									for (var sy=startY;sy<endY;sy++) {
