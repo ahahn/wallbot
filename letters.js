@@ -34,7 +34,22 @@ module.exports = {
 [1,1,1,0,0,0,0,0,0,1,1,1],
 [1,1,1,0,0,0,0,0,0,1,1,1],
 [1,1,1,0,0,0,0,0,0,1,1,1],
-]}},
+],"smoothing":[{"type":"up_right_outside","points":[{X:0,Y:4},{X:1,Y:3},{X:2,Y:2},{X:3,Y:1},{X:4,Y:0}]}]},
+},
+smoothing:
+{"up_right_outside":[
+[0,2],
+[2,1]],
+"down_right_outside":[
+[2,0],
+[1,2]],
+"up_right_inside":[
+[1,2],
+[2,0]],
+"down_right_inside":[
+[2,1],
+[0,2]]}
+,
 block_hollow:{
 "A": {"name":"letterA_hollow","width":12,"height":16,points:[
 [0,0,0,0,1,1,1,1,0,0,0,0],
@@ -53,7 +68,7 @@ block_hollow:{
 [1,0,0,1,0,0,0,0,1,0,0,1],
 [1,0,0,1,0,0,0,0,1,0,0,1],
 [1,1,1,1,0,0,0,0,1,1,1,1],
-]},
+],"smoothing":[{"type":"up_right_outside","points":[{X:0,Y:4},{X:1,Y:3},{X:2,Y:2},{X:3,Y:1},{X:4,Y:0}]}]},
 "H":{"width":12,"height":16,points:[
 [1,1,1,1,0,0,0,0,1,1,1,1],
 [1,0,0,1,0,0,0,0,1,0,0,1],

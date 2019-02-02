@@ -800,6 +800,25 @@ function scaleLetter(letter,scale) {
 	if (scale == 1) {
 		return letter;
 	} else {
+		var smoothing = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill({}));
+		if (letter.smoothing) {
+			for (var s = 0; s < letter.smoothing.length;s++) {
+				let stype = letter.smoothing[s].type;
+				console.log("this letter uses smoothing " + stype);
+				let sti =0;
+				let found = false;
+				let smoothingType = letters.smoothing[stype];
+				console.log('found this smoothing type');
+				if (smoothingType != null) {
+					console.log('looking for points using this smoothing');
+					console.log('points are ' + JSON.stringify(letter.smoothing[s].points));
+					for (sp of letter.smoothing[s].points) {
+						smoothing[sp.X][sp.Y] = smoothingType;
+					}
+				}
+			}
+		}
+		console.log('smoothing is ' + JSON.stringify(smoothing));
 		var returnLetter = {"width": Math.round(letter.width * scale),
 							"height": Math.round(letter.height * scale)};
 		returnLetter.points = new Array(letter.height * scale).fill(0).map(() => new Array(letter.width * scale).fill(0));
@@ -813,9 +832,41 @@ function scaleLetter(letter,scale) {
 			var iv = (i == 0)?0:i*scale;
 			for (var j = 0; j < letter.width; j++) {
 				var jv = (j == 0)?0:j*scale;
-				for (v = 0; v < scale; v++) {
-					for (w = 0; w < scale; w++) {
-						returnLetter.points[iv + v][jv + w] = letter.points[i][j];
+				if (Object.keys(smoothing[i][j]).length > 0) {
+					console.log('smoothable point');
+					var smoothed = new Array(scale).fill(0).map(()=>new Array(scale).fill(0));
+					var s = smoothing[i][j];
+					console.log('subx ends ' + s[0].length + ' suby ends ' + s.length);
+					for (var subx=0;subx<s[0].length;subx++) {
+						for (var suby=0;suby<s.length;suby++) {
+							if (s[subx][suby] == 3) {
+								// recursively apply
+								console.log('recursing');
+							} else {
+								let startX = (subx==0)?0:Math.round(scale/2);
+								let endX = (subx==0)?Math.round(scale/2)-1:scale-1;
+								let startY = (suby==0)?0:Math.round(scale/2);
+								let endY = (suby==0)?Math.round(scale/2)-1:scale-1;
+								console.log('startX ' + startX + ' endX ' + endX + ' startY ' + startY + ' endY '+ endY);
+								for (var sx=startX;sx<endX;sx++) {
+									for (var sy=startY;sy<endY;sy++) {
+										smoothed[sx][sy]=(s[subx][suby]==0)?0:1;
+										console.log('adding smoothed val');
+									}
+								}
+							}
+						}
+					}
+					for (v = 0; v < scale; v++) {
+						for (w = 0; w < scale; w++) {
+							returnLetter.points[iv + v][jv + w] = smoothed[v][w];
+						}
+					}
+				} else {
+					for (v = 0; v < scale; v++) {
+						for (w = 0; w < scale; w++) {
+							returnLetter.points[iv + v][jv + w] = letter.points[i][j];
+						}
 					}
 				}
 			}
