@@ -14,7 +14,8 @@ var commandList = [];
 
 var previewWriteStream;
 var useLetter = letters.letterH;
-var scale = 1;
+var scale = 8;
+var spacing = 10;
 
 const mmFactor = 5;
 
@@ -30,6 +31,7 @@ var curX = Math.round(canvasWidth/2);
 var curY = Math.round(canvasHeight/2);
 var test = false;
 var debug = false;
+var font = 'lineLetters';
 
 var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
@@ -56,6 +58,27 @@ replServer.defineCommand('stop',{
 	help: 'Remove any pending commands',
 	action() {
 		commandList = [];
+	}
+});
+replServer.defineCommand('commands',{
+	help: 'List any pending commands',
+	action() {
+		for (let i = 0;i<commandList.length;i++){
+			console.log(JSON.stringify(commandList[i]));
+		}
+	}
+});
+replServer.defineCommand('font',{
+	help: 'Set the font to use- lineLetters, block, block_hollow',
+	action(fontParam) {
+		let f = fontParam.trim();
+		if (f=='lineLetters'||
+			f=='block'||
+			f=='block_hollow') {
+
+			font = f;
+			console.log('font now ' + font);
+		}
 	}
 });
 replServer.defineCommand('origin',{
@@ -110,6 +133,23 @@ replServer.defineCommand('scale',{
 		scale = c[0];
 	}
 });
+replServer.defineCommand('spacing',{
+	help: 'Set spacing for block letters',
+	action(spacingParam) {
+		console.log('read spacing ',spacingParam);
+		var c = spacingParam.match(/-?\d+/g).map(Number);
+		spacing = c[0];
+	}
+});
+replServer.defineCommand('status',{
+	help: 'Read status of variables',
+	action() {
+		console.log('Current status:');
+		console.log('Font:',font);
+		console.log('Scale:',scale);
+		console.log('Spacing:',spacing);
+	}
+});
 replServer.defineCommand('mode',{
 	help: 'Set operating mode to test, debug or real',
 	action(message) {
@@ -129,26 +169,26 @@ replServer.defineCommand('write',{
 			console.log('read message',message);
 			var first = true;
 			for (let i = 0; i < message.length; i++) {
-				let found = false;
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
 				if (message[i] == ' ') {
 					commandList.push('g ' + (4 * scale) + ' 0');
 				}
-				while ((j < letters.lineLetters.length) && !found) {
-					if (letters.lineLetters[j].letter === message[i]) {
-						console.log('writing ' + message[i]);
-						if (!first) {
-							// make space
-							commandList.push('g ' + (2 * scale) + ' 0');
-						}
-						writeLetter(letters.lineLetters[j]);
-						first = false;
-						found = true;
+				let l = letters[font][message[i]];
+				console.log('letter is ' + JSON.stringify(l));
+				if (Object.keys(l).length > 0) {
+					console.log('writing ' + message[i]);
+					if (!first) {
+						// make space
+						commandList.push('g ' + (2 * scale) + ' 0');
 					}
-					j++;
-				}
-				if (!found) {
+					if (letters[font].style=='line') {
+						writeLineLetter(l);
+					} else if (letters[font].style=='block') {
+						writeBlockLetter(l);
+					}
+					first = false;
+				} else {
 					console.log('couldn\'t find letter ' + message[i]);
 				}
 			}
@@ -159,7 +199,45 @@ replServer.defineCommand('write',{
 
 	}
 });
-function writeLetter(letter) {
+function writeBlockLetter(letter) {
+		console.log('slicing letter ' + JSON.stringify(letter) + ' font ' + font);
+		console.log('starting from X ' + curX + ' Y ' + curY);
+		console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
+		console.log('got scale ' + scale + ' spacing ' + spacing);
+
+		var coords = getCoordsForRightChange(leftLength,rightLength,0);
+		curX = Math.abs(Math.round(coords.X / mmFactor));
+		curY = Math.abs(Math.round(coords.Y / mmFactor));
+		var startLeft = leftLength;
+		var startRight = rightLength;
+		var firstSegments = sliceLetter(letter);
+		console.log('calling optimizePaths');
+		var finalSegments = optimizePaths(firstSegments);
+		console.log('back from optimizePaths');
+
+		leftLength = startLeft;
+		rightLength = startRight;
+		// drawSegmentsUnidirectional(finalSegments);
+		drawSegments(finalSegments);
+
+		// drawSegments(firstSegments);
+		// while (oneCommand = commandList.shift()) {
+		// 	console.log(JSON.stringify(oneCommand));
+		// }
+		// changeLeft(60);
+		// changeRight(60);
+		// drawSegments(secondSegments);
+		if (!test) {
+			var c = commandList.shift();
+			while (c.startsWith("#")) {
+				console.log(c);
+				c = commandList.shift();
+			}
+			sendCommand(c);
+		}
+
+}
+function writeLineLetter(letter) {
 	var down = false;
 	if ((letter.startingPoint.X != 0)||(letter.startingPoint.Y != 0)) {
 		commandList.push('g ' + (letter.startingPoint.X * scale) + ' ' + (letter.startingPoint.Y * scale));
@@ -182,13 +260,6 @@ function writeLetter(letter) {
 		commandList.push('u');
 	}
 }
-replServer.defineCommand('scaletest',{
-	help: 'Test scaling a letter',
-	action() {
-		console.log('scaling letter');
-		scaleLetter(letters.letterH, 2);
-	}
-});
 function optimizePaths(segments) {
 	console.log('segments length is ' + segments.length);
 	var finalPaths = [];
@@ -371,13 +442,6 @@ replServer.defineCommand('lettertest',{
 		console.log('slicing letter');
 		console.log('starting from X ' + curX + ' Y ' + curY);
 		console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
-		console.log('params ' + params);
-		if ((params == null)||(params == "")) {
-			params = "10 30";
-		}
-		var c = params.match(/-?\d+/g).map(Number);
-		var scale = c[0] || 1;
-		var spacing = c[1] || 10;
 		console.log('got scale ' + scale + ' spacing ' + spacing);
 
 		var coords = getCoordsForRightChange(leftLength,rightLength,0);
@@ -385,7 +449,7 @@ replServer.defineCommand('lettertest',{
 		curY = Math.abs(Math.round(coords.Y / mmFactor));
 		var startLeft = leftLength;
 		var startRight = rightLength;
-		var firstSegments = sliceLetter(scale,spacing);
+		var firstSegments = sliceLetter(useLetter);
 		console.log('calling optimizePaths');
 		var finalSegments = optimizePaths(firstSegments);
 		console.log('back from optimizePaths');
@@ -643,9 +707,9 @@ function getDistanceToTargetX(radius, distance, targetX) {
   console.log(useDistance);
   return useDistance;
 }
-function sliceLetter(scale,spacing) {
+function sliceLetter(letterParam) {
 	var segments = [];
-	var letter = scaleLetter(useLetter,scale);
+	var letter = scaleLetter(letterParam);
 	console.log('letter X length ' + letter.points[0].length + ' Y length ' + letter.points.length);
 	if (debug)
 	console.log('cur X ' + curX + ' curY ' + curY);
@@ -863,7 +927,7 @@ function smoothArea(pattern,dest,destX,destY,destLength) {
 		}
 	}
 }
-function scaleLetter(letter,scale) {
+function scaleLetter(letter) {
 	if (debug) {
 		console.log('scaling letter ' + JSON.stringify(letter));
 	}
