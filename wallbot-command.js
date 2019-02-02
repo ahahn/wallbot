@@ -52,6 +52,12 @@ replServer.defineCommand('release',{
 		sendCommand("f");
 	}
 });
+replServer.defineCommand('stop',{
+	help: 'Remove any pending commands',
+	action() {
+		commandList = [];
+	}
+});
 replServer.defineCommand('origin',{
 	help: 'Return to origin',
 	action() {
@@ -129,14 +135,14 @@ replServer.defineCommand('write',{
 				if (message[i] == ' ') {
 					commandList.push('g ' + (4 * scale) + ' 0');
 				}
-				while ((j < lineLetters.length) && !found) {
-					if (lineLetters[j].letter === message[i]) {
+				while ((j < letters.lineLetters.length) && !found) {
+					if (letters.lineLetters[j].letter === message[i]) {
 						console.log('writing ' + message[i]);
 						if (!first) {
 							// make space
 							commandList.push('g ' + (2 * scale) + ' 0');
 						}
-						writeLetter(lineLetters[j]);
+						writeLetter(letters.lineLetters[j]);
 						first = false;
 						found = true;
 					}
@@ -236,6 +242,7 @@ function drawSegments(segments) {
 	var c;
 	var curLeft = leftLength;
 	var curRight = rightLength;
+	var penUp = true;
 	while (seg = segments.shift()) {
 		previewWriteStream.write(JSON.stringify(seg) + ',\r\n', 'ascii');
 		commandList.push('# ' + JSON.stringify(seg));
@@ -273,12 +280,35 @@ function drawSegments(segments) {
 		// 	commandList.push(c);
 		// 	curRight += (seg.rightLengthStart - curRight);
 		// }
-		commandList.push("d");
+		if (penUp) {
+			commandList.push("d");
+			penUp = false;
+		}
 		c = "r " + (endRight - curRight);
 		// c = "r " + (seg.rightLengthEnd - curRight);
 		// console.log(c);
 		commandList.push(c);
-		commandList.push("u");
+
+		// figure out if we're close enough to leave pen down
+		let nextDist = 100;
+		if (segments.length > 0) {
+			let next = segments[0];
+			let nextStartRight = 0;
+			if (Math.abs(curRight - next.rightLengthStart) < Math.abs(curRight - next.rightLengthEnd)) {
+				nextStartRight = next.rightLengthStart;
+			} else {
+				nextStartRight = next.rightLengthEnd;
+			}
+			nextDist = Math.sqrt(Math.pow(curLeft - next.leftLength,1) + Math.pow(curRight - nextStartRight,2));
+		}
+		if (nextDist > 40) {
+			if (!penUp) {
+				commandList.push("u");
+				penUp = true;
+			}
+		}
+
+
 		// curRight += (seg.rightLengthEnd - curRight);
 		curRight += (endRight - curRight);
 	}
@@ -709,10 +739,14 @@ function sliceLetter(scale,spacing) {
 					var angles = getAngleForRightLengths(leftLength,rightLength + startRight,rightLength + lastRightSpacing);
 					// var angles = getAngleForRightChange(leftLength,rightLength + startRight,lastRightSpacing);
 					// var angles = getAngleForRightChange(leftLength,rightLength + startRight,(rightLength + startRight) - (rightLength + lastRightSpacing));
-		            segments.push({'segment':segment,'leftLength':leftLength,
-		            	'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing),
-		            	'angles':angles});
-		            segment++;
+					if (Math.abs((rightLength + startRight)-(rightLength + lastRightSpacing)) < 10) {
+						console.log('skipping short segment');
+					} else {
+			            segments.push({'segment':segment,'leftLength':leftLength,
+			            	'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing),
+			            	'angles':angles});
+			            segment++;
+					}
 		            startRight = NaN;
 		          }
 		        }
@@ -792,6 +826,43 @@ function sliceLetter(scale,spacing) {
 	}
 	return segments;
 }
+function smoothArea(pattern,dest,destX,destY,destLength) {
+	console.log('destX ' + destX + ' destY ' + destY);
+	console.log('dest length X ' + dest[0].length + ' Y ' + dest.length + ' destLength param ' + destLength);
+	var destScale = Math.round(destLength/pattern.length);
+	if (pattern.length == destLength) {
+		console.log('at terminal depth');
+		for (var subx=0;subx<pattern.length;subx++) {
+			for (var suby=0;suby<pattern.length;suby++) {
+				dest[destY+suby][destX+subx] = (pattern[suby][subx]==0)?0:1;
+			}
+		}		
+		return;
+	}
+	for (var subx=0;subx<pattern.length;subx++) {
+		for (var suby=0;suby<pattern.length;suby++) {
+			if (pattern[subx][suby] == 2) {
+				// recursively apply
+				console.log('recursing');
+				smoothArea(pattern,dest,destX+(subx*destScale),destY+(suby*destScale),Math.round(destLength/2));
+				console.log('back from recursing');
+				console.log('now dest length X ' + dest[0].length + ' Y ' + dest.length + ' destLength param ' + destLength);
+			} else {
+				let startX = (subx==0)?destX:Math.round(destLength/2);
+				let endX = (subx==0)?Math.round(destLength/2):destLength;
+				let startY = (suby==0)?destY:Math.round(destLength/2);
+				let endY = (suby==0)?Math.round(destLength/2):destLength;
+				console.log('startX ' + startX + ' endX ' + endX + ' startY ' + startY + ' endY '+ endY);
+				for (var sx=startX;sx<endX;sx++) {
+					for (var sy=startY;sy<endY;sy++) {
+						dest[sy][sx]=(pattern[suby][subx]==0)?0:1;
+						console.log('adding smoothed val');
+					}
+				}
+			}
+		}
+	}
+}
 function scaleLetter(letter,scale) {
 	if (debug) {
 		console.log('scaling letter ' + JSON.stringify(letter));
@@ -813,7 +884,7 @@ function scaleLetter(letter,scale) {
 					console.log('looking for points using this smoothing');
 					console.log('points are ' + JSON.stringify(letter.smoothing[s].points));
 					for (sp of letter.smoothing[s].points) {
-						smoothing[sp.X][sp.Y] = smoothingType;
+						smoothing[sp.Y][sp.X] = smoothingType;
 					}
 				}
 			}
@@ -835,8 +906,11 @@ function scaleLetter(letter,scale) {
 				if (Object.keys(smoothing[i][j]).length > 0) {
 					console.log('smoothable point');
 					var smoothed = new Array(scale).fill(0).map(()=>new Array(scale).fill(0));
+					console.log('smoothed x ' + smoothed[0].length + ' y ' + smoothed.length);
 					var s = smoothing[i][j];
 					console.log('subx ends ' + s[0].length + ' suby ends ' + s.length);
+
+					// smoothArea(s,smoothed,0,0,scale);
 					for (var subx=0;subx<s[0].length;subx++) {
 						for (var suby=0;suby<s.length;suby++) {
 							if (s[subx][suby] == 3) {
@@ -850,16 +924,17 @@ function scaleLetter(letter,scale) {
 								console.log('startX ' + startX + ' endX ' + endX + ' startY ' + startY + ' endY '+ endY);
 								for (var sx=startX;sx<endX;sx++) {
 									for (var sy=startY;sy<endY;sy++) {
-										smoothed[sx][sy]=(s[subx][suby]==0)?0:1;
+										smoothed[sy][sx]=(s[subx][suby]==0)?0:1;
 										console.log('adding smoothed val');
 									}
 								}
 							}
 						}
 					}
+
 					for (v = 0; v < scale; v++) {
 						for (w = 0; w < scale; w++) {
-							returnLetter.points[iv + v][jv + w] = smoothed[v][w];
+							returnLetter.points[iv + v][jv + w] = smoothed[w][v];
 						}
 					}
 				} else {
