@@ -235,7 +235,8 @@ function writeBlockLetter(letter) {
 			}
 			sendCommand(c);
 		}
-
+		// now move to end of letter
+		
 }
 function writeLineLetter(letter) {
 	var down = false;
