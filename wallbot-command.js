@@ -264,7 +264,9 @@ replServer.defineCommand('write',{
 			}
 			outputPreviewFooter();
 			previewWriteStream.end();
-			sendCommand(commandList.shift());
+			if (commandList.length > 0) {
+				sendCommand(commandList.shift());
+			}
 		} else {
 			console.log('Usage: write <string>');
 		}
