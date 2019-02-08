@@ -418,6 +418,7 @@ function drawSegments(letter,segments,leftLength,rightLength) {
 	var curRight = rightLength;
 	var penUp = true;
 	console.log('start curLeft ' + curLeft + ' curRight ' + curRight);
+	var startCoords = getCoordsForLeftChange(rightLength,leftLength,0);
 	while (seg = segments.shift()) {
 		previewWriteStream.write(JSON.stringify(seg) + ',\r\n', 'ascii');
 		commandList.push('# ' + JSON.stringify(seg));
@@ -474,10 +475,9 @@ function drawSegments(letter,segments,leftLength,rightLength) {
 		curRight += (endRight - curRight);
 	}
 	console.log('end curLeft ' + curLeft + ' curRight ' + curRight);
-	var startCoords = getCoordsForLeftChange(rightLength,leftLength,0);
 	var endCoords = getCoordsForLeftChange(curRight,curLeft,0);
 	var targetX = startCoords.X + ((letter.width * scale) * mmFactor);
-	console.log('startcoords ' + JSON.stringify(startCoords) + ' endcoords ' + JSON.stringify(endCoords) + ' diff ' + (startCoords.Y - endCoords.Y) + ' tagetX ' + targetX);
+	console.log('startcoords ' + JSON.stringify(startCoords) + ' endcoords ' + JSON.stringify(endCoords) + ' diff Y ' + (startCoords.Y - endCoords.Y) + ' X ' + (targetX - endCoords.X) + ' tagetX ' + targetX);
 	if ((startCoords.Y != endCoords.Y)||(endCoords.X != targetX)) {
 		commandList.push('g ' + (targetX - endCoords.X) +' ' + (startCoords.Y - endCoords.Y));
 	}
@@ -1079,7 +1079,7 @@ function outputPreviewHeader() {
 previewWriteStream.write('<head>\r\n','ascii');
 previewWriteStream.write('</head>\r\n','ascii');
 previewWriteStream.write('<body bgcolor="#ffffff">\r\n','ascii');
-previewWriteStream.write('<canvas id="myCanvas" width="' + canvasWidth + '" height="' + canvasHeight + '" style="border:1px solid #d3d3d3;">\r\n','ascii');
+previewWriteStream.write('<canvas id="myCanvas" width="' + (canvasWidth * 2) + '" height="' + canvasHeight + '" style="border:1px solid #d3d3d3;">\r\n','ascii');
 previewWriteStream.write('Your browser does not support the HTML5 canvas tag.</canvas>\r\n','ascii');
 previewWriteStream.write('<script>\r\n','ascii');
 previewWriteStream.write('var c = document.getElementById("myCanvas");\r\n','ascii');
