@@ -13,7 +13,6 @@ const replServer = repl.start({ prompt: '> '});
 var commandList = [];
 
 var previewWriteStream;
-var useLetter = letters.letterH;
 var scale = 8;
 var spacing = 10;
 
@@ -232,6 +231,7 @@ replServer.defineCommand('write',{
 			var first = true;
 			var letterX = curX * mmFactor;
 			var letterY = curY * mmFactor;
+			var control = false;
 			for (let i = 0; i < message.length; i++) {
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
@@ -239,7 +239,17 @@ replServer.defineCommand('write',{
 					commandList.push('g ' + (4 * scale) + ' 0');
 					letterX += (4 * scale);
 					continue;
+				} else if (message[i] == '\\') {
+					control = true;
+					continue;
+				} else if (control) {
+					if (message[i] == 'r') {
+						console.log('got slash-r');
+					}
+					control = false;
+					continue;
 				}
+				control = false;
 				let l = letters[font][message[i]];
 				if (debug) console.log('letter is ' + JSON.stringify(l));
 				if ((l) && (Object.keys(l).length > 0)) {
@@ -287,6 +297,7 @@ function writeBlockLetter(letter,leftLength,rightLength,curX,curY) {
 	curY = Math.abs(Math.round(coords.Y / mmFactor));
 	var startLeft = leftLength;
 	var startRight = rightLength;
+	console.log('slicing ' + JSON.stringify(letter) + ' font ' + font);
 	var slicedLetter = sliceLetter(letter,leftLength,rightLength,curX,curY);
 	if (debug) console.log('calling optimizePaths');
 	slicedLetter.finalSegments = optimizePaths(slicedLetter.segments);
@@ -297,6 +308,7 @@ function writeBlockLetter(letter,leftLength,rightLength,curX,curY) {
 	if (unidirectional) {
 		drawSegmentsUnidirectional(letter,slicedLetter,leftLength,rightLength);
 	} else {
+		console.log('drawing segments from letter ' + JSON.stringify(letter) + ' font ' + font);
 		drawSegments(letter,slicedLetter,leftLength,rightLength);
 	}
 	sendNextCommand();
@@ -1018,8 +1030,9 @@ function scaleLetter(letter) {
 	}
 	if (debug) console.log('scaling by ' + scale);
 	if (scale == 1) {
-		var returnLetter = letter;
-		returnLetter.slicedPoints = letter.points;
+		var returnLetter = {};
+		returnLetter.points = letter.points.slice(0);
+		returnLetter.slicedPoints = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill(0));
 		return returnLetter;
 	} else {
 		var smoothing = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill({}));
