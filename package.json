@@ -1,0 +1,22 @@
+{
+  "name": "wallbot",
+  "version": "1.0.0",
+  "description": "Controll for wallbot drawing robot",
+  "main": "wallbot-command.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahahn/wallbot.git"
+  },
+  "author": "adam.hahn@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ahahn/wallbot/issues"
+  },
+  "homepage": "https://github.com/ahahn/wallbot#readme",
+  "dependencies": {
+    "serialport": "^7.1.4"
+  }
+}

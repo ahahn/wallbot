@@ -1,11 +1,12 @@
 const repl = require('repl');
 const fs = require('fs');
+const config = require('./config.json');
 const letters = require('./letters.js');
 const SerialPort = require('serialport')
 const Readline = SerialPort.parsers.Readline
 const due = '/dev/cu.usbserial-A9007RfU'
 const uno = '/dev/cu.usbmodem1421'
-const port = new SerialPort(uno, {
+const port = new SerialPort(config.port, {
 	baudRate:19200
 });
 const parser = new Readline();
