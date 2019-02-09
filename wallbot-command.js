@@ -225,6 +225,7 @@ replServer.defineCommand('write',{
 	help: 'Write the text as line letters',
 	action(message) {
 		if (message.length > 0) {
+			commandList = [];
 			previewWriteStream = fs.createWriteStream("wallbot-drawing.html");
 			outputPreviewHeader();
 			console.log('read message',message);
@@ -525,6 +526,12 @@ function drawSegmentsUnidirectional(letter,slicedLetter,leftLength,rightLength) 
 		commandList.push("u");
 		curRight += (seg.rightLengthEnd - curRight);
 	}
+	console.log('doneLengths ' + JSON.stringify(slicedLetter.doneLengths))
+	var leftDiff = slicedLetter.doneLengths.leftLength - curLeft;
+	var rightDiff = slicedLetter.doneLengths.rightLength - curRight;
+	console.log('leftDiff ' + leftDiff + ' rightDiff ' + rightDiff);
+	commandList.push('r ' + rightDiff);
+	commandList.push('l ' + leftDiff);
 }
 replServer.defineCommand('left',{
 	help: 'Change left length distance specified',
