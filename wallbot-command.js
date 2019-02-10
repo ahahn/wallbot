@@ -239,6 +239,7 @@ replServer.defineCommand('write',{
 			var letterY = curY * mmFactor;
 			var control = false;
 			var maxHeight = -1;
+			var bottomLengths = null;
 			for (let i = 0; i < message.length; i++) {
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
@@ -252,14 +253,24 @@ replServer.defineCommand('write',{
 				} else if (control) {
 					if (message[i] == 'r') {
 						console.log('got slash-r');
-						console.log('maxHeight is ' + maxHeight + ' curX ' + curX + ' letterX ' + letterX);
+
+						// console.log('maxHeight is ' + maxHeight + ' curX ' + curX + ' letterX ' + letterX);
 						var xDiff = curX - (letterX / mmFactor);
 						var yDiff = (maxHeight + 3) * scale;
 						console.log('xDiff ' + xDiff + ' yDiff ' + yDiff);
-						commandList.push('g ' + xDiff + ' ' + yDiff);
+						// commandList.push('g ' + xDiff + ' ' + yDiff);
 						letterX += xDiff * mmFactor;
 						letterY += yDiff * mmFactor;
+
+						if (bottomLengths != null) {
+							var rDiff = rightLength - bottomLengths.rightLength;
+							var lDiff = leftLength - bottomLengths.leftLength;
+							console.log('rDiff ' + rDiff + ' lDiff ' + lDiff);
+							commandList.push('r ' + rDiff);
+							commandList.push('l ' + lDiff);
+						}
 						first = true;
+						bottomLengths = null;
 						maxHeight = -1;
 					}
 					control = false;
@@ -287,6 +298,10 @@ replServer.defineCommand('write',{
 						var lengths = getLengthsForCoords(letterX,letterY);
 						console.log('letterX ' + letterX + ' letterY ' + letterY);
 						writeBlockLetter(l,lengths.leftLength,lengths.rightLength,letterX,letterY);
+						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
+						if (bottomLengths == null) {
+							bottomLengths = l.bottomLengths;
+						}
 						letterX += (l.width * scale) * mmFactor;
 					}
 					first = false;
@@ -800,8 +815,10 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 	var lastY = curY + letter.points.length;
 	// console.log('lastX ' + lastX + ' lastY ' + lastY);
 	var doneLengths = getLengthsForCoords(lastX * mmFactor, firstY * mmFactor);
+	var bottomLengths = getLengthsForCoords(curX * mmFactor, lastY * mmFactor);
 	console.log('doneLengths ' + JSON.stringify(doneLengths));
 	slicedLetter.doneLengths = doneLengths;
+	letterParam.bottomLengths = bottomLengths;
 	var lastLengths = getLengthsForCoords(lastX * mmFactor, lastY * mmFactor);
 	if (test) {
 		console.log('lastlengths ' + JSON.stringify(lastLengths));
@@ -846,7 +863,7 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 		changes = 0;
 		while ((!rightChanges)&&(changes < 10)&& ((newX < 0)||(newX >= letter.points[0].length))) {
 			changes++;
-			if (lastLeftAdjustment == leftLength) break;
+			// if (lastLeftAdjustment == leftLength) break;
 			lastLeftAdjustment = leftLength;
 			if (debug)
 			console.log('adjusting from newX ' + newX + ' newY ' + newY);
