@@ -1,6 +1,8 @@
 #include <Wire.h>
 #include <Servo.h> 
 #include <Adafruit_MotorShield.h>
+//#include <AccelStepper.h>
+//#include <MultiStepper.h>
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 
@@ -16,11 +18,29 @@ Adafruit_StepperMotor *myMotor2 = AFMS.getStepper(200, 2);
 // SINGLE DOUBLE INTERLEAVE MICROSTEP
 #define STEPPERCOIL SINGLE
 #define STEPPERSPEED 2
+#define SERVOUP 150
+#define SERVODOWN 90
 #define USESERVO 1
 #ifdef USESERVO
 Servo servo1;
 int servoAngle = 150;
 #endif
+
+//void forwardstep1() {
+//  myMotor1->onestep(MOTOR_RIGHT_FORWARD,STEPPERCOIL);
+//}
+//void backwardstep1() {
+//  myMotor1->onestep(MOTOR_RIGHT_BACKWARD,STEPPERCOIL);
+//}
+//void forwardstep2() {
+//  myMotor2->onestep(MOTOR_LEFT_FORWARD,STEPPERCOIL);
+//}
+//void backwardstep2() {
+//  myMotor2->onestep(MOTOR_LEFT_BACKWARD,STEPPERCOIL);
+//}
+//
+//AccelStepper stepper1(forwardstep1, backwardstep1);
+//AccelStepper stepper2(forwardstep2, backwardstep2);
 
 // units in mm
 //#define canvasWidth 1000
@@ -34,8 +54,9 @@ int curY = canvasHeight / 2;
 int stepsRight = 0;
 int stepsLeft = 0;
 
+#ifdef DEBUG
 int debug = 0;
-int commandCount = 0;
+#endif
 
 void setup() {
   // put your setup code here, to run once:
@@ -44,10 +65,14 @@ void setup() {
   AFMS.begin();
   myMotor1->setSpeed(STEPPERSPEED);
   myMotor2->setSpeed(STEPPERSPEED);
-
+  
+//  stepper1.setMaxSpeed(100.0);
+//  stepper1.setAcceleration(100.0);
+//  stepper2.setMaxSpeed(100.0);
+//  stepper2.setAcceleration(100.0);
 #ifdef USESERVO
   servo1.attach(10);
-//  servo1.write(servoAngle);
+  servo1.write(servoAngle);
 #endif
 
   Serial.println("ready");
