@@ -210,6 +210,7 @@ replServer.defineCommand('status',{
 		console.log('Scale:',scale);
 		console.log('Spacing:',spacing);
 		console.log('Lift:',lift);
+		console.log('Lift gap:',liftGap);
 		console.log('Unidirectional:' + unidirectional);
 	}
 });
@@ -806,6 +807,7 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 		console.log('lastlengths ' + JSON.stringify(lastLengths));
 		console.log('leftLength ' + leftLength +' rightLength ' + rightLength);
 	}
+	var lastLeftAdjustment = 0;
 
 	var segment = 0;
 	while (leftLength <= lastLengths.leftLength) {
@@ -844,6 +846,8 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 		changes = 0;
 		while ((!rightChanges)&&(changes < 10)&& ((newX < 0)||(newX >= letter.points[0].length))) {
 			changes++;
+			if (lastLeftAdjustment == leftLength) break;
+			lastLeftAdjustment = leftLength;
 			if (debug)
 			console.log('adjusting from newX ' + newX + ' newY ' + newY);
 			if (rightLength <= lastLengths.rightLength) {
