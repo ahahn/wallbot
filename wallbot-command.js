@@ -237,12 +237,13 @@ replServer.defineCommand('write',{
 			var letterX = curX * mmFactor;
 			var letterY = curY * mmFactor;
 			var control = false;
+			var maxHeight = -1;
 			for (let i = 0; i < message.length; i++) {
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
 				if (message[i] == ' ') {
 					commandList.push('g ' + (4 * scale) + ' 0');
-					letterX += (4 * scale);
+					letterX += (4 * scale) * mmFactor;
 					continue;
 				} else if (message[i] == '\\') {
 					control = true;
@@ -250,6 +251,15 @@ replServer.defineCommand('write',{
 				} else if (control) {
 					if (message[i] == 'r') {
 						console.log('got slash-r');
+						console.log('maxHeight is ' + maxHeight + ' curX ' + curX + ' letterX ' + letterX);
+						var xDiff = curX - (letterX / mmFactor);
+						var yDiff = (maxHeight + 3) * scale;
+						console.log('xDiff ' + xDiff + ' yDiff ' + yDiff);
+						commandList.push('g ' + xDiff + ' ' + yDiff);
+						letterX += xDiff * mmFactor;
+						letterY += yDiff * mmFactor;
+						first = true;
+						maxHeight = -1;
 					}
 					control = false;
 					continue;
@@ -259,6 +269,7 @@ replServer.defineCommand('write',{
 				if (debug) console.log('letter is ' + JSON.stringify(l));
 				if ((l) && (Object.keys(l).length > 0)) {
 					console.log('writing ' + message[i]);
+					if (l.height > maxHeight) maxHeight = l.height;
 					if (letters[font].style=='line') {
 						if (!first) {
 							// make space
@@ -267,13 +278,15 @@ replServer.defineCommand('write',{
 						}
 						writeLineLetter(l);
 					} else if (letters[font].style=='block') {
+						if (!first) {
+							// make space
+							commandList.push('g ' + (3 * scale) + ' 0');
+							letterX += (3 * scale) * mmFactor;
+						}
 						var lengths = getLengthsForCoords(letterX,letterY);
 						console.log('letterX ' + letterX + ' letterY ' + letterY);
 						writeBlockLetter(l,lengths.leftLength,lengths.rightLength,letterX,letterY);
 						letterX += (l.width * scale) * mmFactor;
-						// make space
-						commandList.push('g ' + (3 * scale) + ' 0');
-						letterX += (3 * scale) * mmFactor;
 					}
 					first = false;
 				} else {
