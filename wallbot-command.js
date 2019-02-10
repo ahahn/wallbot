@@ -161,17 +161,21 @@ replServer.defineCommand('right',{
 replServer.defineCommand('scale',{
 	help: 'Set scale for line letters',
 	action(scaleParam) {
-		console.log('read scale',scaleParam);
-		var c = scaleParam.match(/-?\d+/g).map(Number);
-		scale = c[0];
+		if (scaleParam.trim().length > 0) {
+			console.log('read scale',scaleParam);
+			var c = scaleParam.match(/-?\d+/g).map(Number);
+			scale = c[0];
+		}
 	}
 });
 replServer.defineCommand('spacing',{
 	help: 'Set spacing for block letters',
 	action(spacingParam) {
-		console.log('read spacing ',spacingParam);
-		var c = spacingParam.match(/-?\d+/g).map(Number);
-		spacing = c[0];
+		if (spacingParam.trim().length > 0) {
+			console.log('read spacing ',spacingParam);
+			var c = spacingParam.match(/-?\d+/g).map(Number);
+			spacing = c[0];
+		}
 	}
 });
 replServer.defineCommand('lift',{
