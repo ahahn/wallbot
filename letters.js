@@ -1,6 +1,7 @@
 module.exports = {
 	block:{
 	"style":"block",
+	"spaceWidth": 8,
 "A": {"width":10,"height":16,points:[
 [0,0,0,0,1,1,0,0,0,0],
 [0,0,0,1,1,1,1,0,0,0],
@@ -1515,6 +1516,7 @@ block_hollow:{
 },
 lineLetters:{
 	"style":"line",
+	"spaceWidth": 4,
 "A":{"width":4,"height":8,"startingPoint":{"X":2,"Y":0},"lines":[
 {"X":-2,"Y":8},
 {"X":2,"Y":-8,"up":1},

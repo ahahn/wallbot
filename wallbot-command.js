@@ -244,8 +244,8 @@ replServer.defineCommand('write',{
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
 				if (message[i] == ' ') {
-					commandList.push('g ' + (4 * scale) + ' 0');
-					letterX += (4 * scale) * mmFactor;
+					commandList.push('g ' + (letters[font].spaceWidth * scale) + ' 0');
+					letterX += (letters[font].spaceWidth * scale) * mmFactor;
 					continue;
 				} else if (message[i] == '\\') {
 					control = true;
