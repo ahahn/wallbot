@@ -146,6 +146,7 @@ replServer.defineCommand('canvas',{
 		curY = Math.round(canvasHeight/2);
 		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 		leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
+		console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
 	}
 });
 replServer.defineCommand('right',{
