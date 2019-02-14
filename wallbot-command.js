@@ -141,7 +141,7 @@ replServer.defineCommand('canvas',{
 		console.log('Y ',c[1]);
 		canvasWidth = c[0];
 		canvasHeight = c[1];
-		sendCommand('x ' + c[0] +' ' + c[1]);
+		sendCommand('c ' + c[0] +' ' + c[1]);
 		curX = Math.round(canvasWidth/2);
 		curY = Math.round(canvasHeight/2);
 		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
