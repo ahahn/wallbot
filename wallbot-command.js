@@ -141,7 +141,7 @@ replServer.defineCommand('canvas',{
 		console.log('Y ',c[1]);
 		canvasWidth = c[0];
 		canvasHeight = c[1];
-		sendCommand('c ' + c[0] +' ' + c[1]);
+		sendCommand('x ' + c[0] +' ' + c[1]);
 		curX = Math.round(canvasWidth/2);
 		curY = Math.round(canvasHeight/2);
 		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
@@ -331,7 +331,6 @@ function writeBlockLetter(letter,leftLength,rightLength,curX,curY) {
 	curY = Math.abs(Math.round(coords.Y / mmFactor));
 	var startLeft = leftLength;
 	var startRight = rightLength;
-	console.log('slicing ' + JSON.stringify(letter) + ' font ' + font);
 	var slicedLetter = sliceLetter(letter,leftLength,rightLength,curX,curY);
 	if (debug) console.log('calling optimizePaths');
 	slicedLetter.finalSegments = optimizePaths(slicedLetter.segments);
@@ -446,12 +445,14 @@ function optimizePaths(segments) {
 			}
 		}
 		if (duplicates.length > 0) {
+			if (debug)
 			console.log('duplicates ' + duplicates.length);
 			var removed = 0;
 			for (var dup of duplicates) {
 				if ((dup - removed) < shortestIndex) shortestIndex--;
 				var s = segments.splice(dup - removed,1);
 				removed++;
+				if (debug)
 				console.log('removed duplicate segment ' + JSON.stringify(s));
 			}
 		}
@@ -502,6 +503,7 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 		}
 		c = "r " + (endRight - curRight);
 		commandList.push(c);
+		curRight += (endRight - curRight);
 
 		// figure out if we're close enough to leave pen down
 		let nextDist = liftGap + 100;
@@ -523,8 +525,6 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 				penUp = true;
 			}
 		}
-
-		curRight += (endRight - curRight);
 	}
 	commandList.push('p');
 	console.log('end curLeft ' + curLeft + ' curRight ' + curRight);

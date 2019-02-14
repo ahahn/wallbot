@@ -1,7 +1,7 @@
 module.exports = {
 	block:{
 	"style":"block",
-	"spaceWidth": 8,
+	"spaceWidth": 12,
 "A": {"width":10,"height":16,points:[
 [0,0,0,0,1,1,0,0,0,0],
 [0,0,0,1,1,1,1,0,0,0],
