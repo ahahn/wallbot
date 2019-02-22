@@ -17,7 +17,8 @@ var previewWriteStream;
 var scale = 8;
 var spacing = 10;
 
-const mmFactor = 5;
+const mmFactor = 2;
+var scaleFactor = 2;
 
 var canvasWidth = 1000;
 var canvasHeight = 700;
@@ -37,8 +38,10 @@ var liftGap = 40;
 var unidirectional = false;
 var pause = false;
 
-var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
-var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
+var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
+var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
+// var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
+// var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 
 replServer.defineCommand('commands',{
 	help: 'Read commands available from arduino',
@@ -50,6 +53,7 @@ replServer.defineCommand('position',{
 	help: 'Read current position from arduino',
 	action() {
 		sendCommand("p");
+		console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
 	}
 });
 replServer.defineCommand('release',{
@@ -95,6 +99,8 @@ replServer.defineCommand('font',{
 
 			font = f;
 			console.log('font now ' + font);
+		} else {
+			console.log('unknown font ' + f);
 		}
 	}
 });
@@ -102,6 +108,8 @@ replServer.defineCommand('origin',{
 	help: 'Return to origin',
 	action() {
 		sendCommand("o");
+		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
+		leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
 	}
 });
 replServer.defineCommand('penup',{
@@ -132,11 +140,37 @@ replServer.defineCommand('go',{
 		sendCommand('g ' + c[0] +' ' + c[1]);
 	}
 });
+replServer.defineCommand('coords',{
+	help: 'Report coordinates of specified <left> <right> lengths',
+	action(lengths) {
+		console.log('read lengths',lengths);
+		var c = lengths.match(/-?\d+/g).map(Number);
+		console.log('left ',c[0]);
+		console.log('right ',c[1]);
+		var coords = getCoordsForLengths(c[0],c[1]);
+		console.log('got coords ' + JSON.stringify(coords));
+		var lengths = getLengthsForCoords(coords.X,coords.Y);
+		console.log('got lengths ' + JSON.stringify(lengths));
+	}
+});
 replServer.defineCommand('canvas',{
 	help: 'Define new canvas size in mm <x> <y>',
 	action(sizes) {
+		if (sizes.trim().length == 0) {
+			console.log('usage: canvas <width in mm> <height in mm>');
+			return;
+		}
 		console.log('read sizes ',sizes);
-		var c = sizes.match(/-?\d+/g).map(Number);
+		var m = sizes.match(/-?\d+/g);
+		if (m == null) {
+			console.log('usage: canvas <width in mm> <height in mm>');
+			return;
+		}
+		var c = m.map(Number);
+		if (c.length != 2) {
+			console.log('usage: canvas <width in mm> <height in mm>');
+			return;
+		}
 		console.log('X ',c[0]);
 		console.log('Y ',c[1]);
 		canvasWidth = c[0];
@@ -144,8 +178,10 @@ replServer.defineCommand('canvas',{
 		sendCommand('c ' + c[0] +' ' + c[1]);
 		curX = Math.round(canvasWidth/2);
 		curY = Math.round(canvasHeight/2);
-		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
-		leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
+		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth/ 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
+		leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
+		// rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
+		// leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 		console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
 	}
 });
@@ -166,6 +202,18 @@ replServer.defineCommand('scale',{
 			console.log('read scale',scaleParam);
 			var c = scaleParam.match(/-?\d+/g).map(Number);
 			scale = c[0];
+			console.log('scale now ' + scale);
+		}
+	}
+});
+replServer.defineCommand('scalefactor',{
+	help: 'Set overall scaling',
+	action(scaleParam) {
+		if (scaleParam.trim().length > 0) {
+			console.log('read scalefactor',scaleParam);
+			var c = scaleParam.match(/-?\d+/g).map(Number);
+			scaleFactor = c[0];
+			console.log('scalefactor now ' + scaleFactor);
 		}
 	}
 });
@@ -176,6 +224,7 @@ replServer.defineCommand('spacing',{
 			console.log('read spacing ',spacingParam);
 			var c = spacingParam.match(/-?\d+/g).map(Number);
 			spacing = c[0];
+			console.log('spacing now ' + spacing);
 		}
 	}
 });
@@ -205,10 +254,13 @@ replServer.defineCommand('status',{
 	help: 'Read status of variables',
 	action() {
 		console.log('Current status:');
+		console.log('Lengths Left ' + leftLength + ' Right ' + rightLength);
+		console.log('Coords X ' + curX + ' Y ' + curY);
 		console.log('Test:',test);
 		console.log('Debug:',debug);
 		console.log('Font:',font);
 		console.log('Scale:',scale);
+		console.log('Scale Factor:',scaleFactor);
 		console.log('Spacing:',spacing);
 		console.log('Lift:',lift);
 		console.log('Lift gap:',liftGap);
@@ -235,9 +287,12 @@ replServer.defineCommand('write',{
 			previewWriteStream = fs.createWriteStream("wallbot-drawing.html");
 			outputPreviewHeader();
 			console.log('read message',message);
+			console.log('curX ' + curX + ' curY ' + curY);
 			var first = true;
-			var letterX = curX * mmFactor;
-			var letterY = curY * mmFactor;
+			var letterX = curX;
+			var letterY = curY;
+			// var letterX = curX * mmFactor;
+			// var letterY = curY * mmFactor;
 			var control = false;
 			var maxHeight = -1;
 			var bottomLengths = null;
@@ -294,11 +349,11 @@ replServer.defineCommand('write',{
 						if (!first) {
 							// make space
 							commandList.push('g ' + (3 * scale) + ' 0');
-							letterX += (3 * scale) * mmFactor;
+							letterX += (3 * scale);
 						}
 						var lengths = getLengthsForCoords(letterX,letterY);
-						console.log('letterX ' + letterX + ' letterY ' + letterY);
-						writeBlockLetter(l,lengths.leftLength,lengths.rightLength,letterX,letterY);
+						console.log('letterX ' + letterX + ' letterY ' + letterY + ' got lengths ' + JSON.stringify(lengths));
+						writeBlockLetter(l,lengths.leftLength,lengths.rightLength);
 						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
 						if (bottomLengths == null) {
 							bottomLengths = l.bottomLengths;
@@ -321,18 +376,18 @@ replServer.defineCommand('write',{
 
 	}
 });
-function writeBlockLetter(letter,leftLength,rightLength,curX,curY) {
+function writeBlockLetter(letter,leftLength,rightLength) {
 	console.log('slicing letter ' + JSON.stringify(letter) + ' font ' + font);
-	console.log('starting from X ' + curX + ' Y ' + curY);
 	console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
 	console.log('got scale ' + scale + ' spacing ' + spacing);
 
-	var coords = getCoordsForRightChange(leftLength,rightLength,0);
-	curX = Math.abs(Math.round(coords.X / mmFactor));
-	curY = Math.abs(Math.round(coords.Y / mmFactor));
+	var coords = getCoordsForLengths(leftLength,rightLength);
+	console.log('coords ' + JSON.stringify(coords));
+	// curX = Math.abs(Math.round(coords.X / mmFactor));
+	// curY = Math.abs(Math.round(coords.Y / mmFactor));
 	var startLeft = leftLength;
 	var startRight = rightLength;
-	var slicedLetter = sliceLetter(letter,leftLength,rightLength,curX,curY);
+	var slicedLetter = sliceLetter(letter,leftLength,rightLength);
 	if (debug) console.log('calling optimizePaths');
 	slicedLetter.finalSegments = optimizePaths(slicedLetter.segments);
 	if (debug) console.log('back from optimizePaths');
@@ -383,6 +438,7 @@ function writeLineLetter(letter) {
 function optimizePaths(segments) {
 	console.log('segments length is ' + segments.length);
 	var finalPaths = [];
+	if (segments.length == 0) return finalPaths;
 	var current = segments.shift();
 	var startRight = current.rightLengthEnd;
 	var shortest = Number.MAX_SAFE_INTEGER;
@@ -472,10 +528,12 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 	var penUp = true;
 	var segments = slicedLetter.finalSegments;
 	console.log('start curLeft ' + curLeft + ' curRight ' + curRight);
-	var startCoords = getCoordsForLeftChange(rightLength,leftLength,0);
+	var startCoords = getCoordsForLengths(leftLength,rightLength);
+	// var startCoords = getCoordsForLeftChange(rightLength,leftLength,0);
 	while (seg = segments.shift()) {
 		previewWriteStream.write(JSON.stringify(seg) + ',\r\n', 'ascii');
 		commandList.push('# ' + JSON.stringify(seg));
+		if (debug) console.log(seg);
 		var startRight;
 		var endRight;
 		var rightShift;
@@ -490,11 +548,13 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 		}
 		if (seg.leftLength != leftLength) {
 			c = "l " + (seg.leftLength - curLeft);
+			if (debug) console.log(c);
 			commandList.push(c);
 			curLeft += (seg.leftLength - curLeft);
 		}
 		if (startRight != curRight) {
 			c = "r " + rightShift;
+			if (debug) console.log(c);
 			commandList.push(c);
 			curRight += rightShift;
 		}
@@ -503,6 +563,7 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 			penUp = false;
 		}
 		c = "r " + (endRight - curRight);
+		if (debug) console.log(c);
 		commandList.push(c);
 		curRight += (endRight - curRight);
 
@@ -591,11 +652,11 @@ replServer.defineCommand('left',{
 	}
 });
 function changeRight(steps) {
-	rightLength += steps;
+	// rightLength += (steps/mmFactor);
 	sendCommand('r ' + steps);
 }
 function changeLeft(steps) {
-	leftLength += steps;
+	// leftLength += (steps/mmFactor);
 	sendCommand('l ' + steps);
 }
 port.on("open", function () {
@@ -646,6 +707,36 @@ function sendCommand(command) {
 	if (!test) {
 		port.write(command + "\r");
 	}
+	if (command.trim().startsWith('r')) {
+		var c = command.substring(1).match(/-?\d+/g).map(Number);	
+		if (!isNaN(c[0])) {			
+			rightLength += c[0]/mmFactor;
+			// rightLength += c/mmFactor;
+			var coords = getCoordsForLengths(leftLength,rightLength);
+			curX = Math.abs(Math.round(coords.X / mmFactor));
+			curY = Math.abs(Math.round(coords.Y / mmFactor));
+			console.log('coords ' + JSON.stringify(coords) + ' curX ' + curX + ' curY ' + curY + ' leftLength ' + leftLength + ' rightLength ' + rightLength);
+		}
+	} else 	if (command.trim().startsWith('l')) {
+		var c = command.substring(1).match(/-?\d+/g).map(Number);		
+		if (!isNaN(c[0]))	{
+			leftLength += c[0]/mmFactor;
+			// leftLength += c/mmFactor;
+			var coords = getCoordsForLengths(leftLength,rightLength);
+			curX = Math.abs(Math.round(coords.X / mmFactor));
+			curY = Math.abs(Math.round(coords.Y / mmFactor));
+			console.log('coords ' + JSON.stringify(coords) + ' curX ' + curX + ' curY ' + curY + ' leftLength ' + leftLength + ' rightLength ' + rightLength);
+		}
+	} else if (command.trim().startsWith('g')) {
+		var c = command.substring(1).match(/-?\d+/g).map(Number);		
+		var lengths = getLengthsForCoords(curX + c[0],curY + c[1]);
+		console.log('got lengths ' + JSON.stringify(lengths));
+		leftLength = lengths.leftLength;
+		rightLength = lengths.rightLength;
+		curX += c[0];
+		curY += c[1];
+
+	}
 }
 
 function goByArcs(x,y,ll,rl) {
@@ -682,7 +773,7 @@ function getLengthsForCoords(x,y) {
 	var xSteps = x;
 	var ySteps = y;
 	var leftLength = Math.round(Math.sqrt(Math.pow(xSteps,2) + Math.pow(ySteps,2)));
-	var rightLength = Math.round(Math.sqrt(Math.pow((canvasWidth * mmFactor)-xSteps,2) + Math.pow(ySteps,2)));
+	var rightLength = Math.round(Math.sqrt(Math.pow((canvasWidth)-xSteps,2) + Math.pow(ySteps,2)));
 	return({'leftLength':leftLength,'rightLength':rightLength});
  }
 function getCoordsForRightChange(leftRadius,rightRadius,rightChange) {
@@ -707,14 +798,34 @@ function getCoordsForRightChange(leftRadius,rightRadius,rightChange) {
   // console.log(y);
   return {"X":x,"Y":y};
  }
+function getCoordsForLengths(leftRadius,rightRadius) {
+	// console.log('getting coords for lengths left ' + leftRadius + ' right ' + rightRadius + ' canvasWidth ' + canvasWidth);
+	// cos(C) = (a^2 + b^2 - c^2)/2ab
+	var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth ,2) - Math.pow(rightRadius,2);
+	// if (debug) console.log('squares ' + squares);
+	var cosC = (squares / (2 * leftRadius * (canvasWidth)))	;
+	// var cosC = (squares / (2 * leftRadius * (canvasWidth * mmFactor)))	;
+	// if (debug) console.log('cosC ' + cosC);
+	var radianAngle = Math.acos(cosC);
+	if (isNaN(radianAngle)) {
+		console.log('NaN radianAngle for left ' + leftRadius + ' right ' + rightRadius + ' canvasWidth ' + canvasWidth);
+	}
+	// if (debug) {
+	// 	console.log('radianAngle ' + radianAngle);
+	// 	console.log('degree angle ' + (radianAngle * 180 / Math.PI));
+	// }
+	var x = Math.round(leftRadius * Math.sin(radianAngle + (Math.PI / 2)));
+	var y = Math.round(leftRadius * Math.cos(radianAngle + (Math.PI / 2))) * -1;
+	return {"X":x,"Y":y};
+}
 function getAngleForRightLengths(leftRadius,rightRadius,rightRadiusEnd) {
   // var side = rightChange / 2;
   // var angle = Math.asin(side/leftRadius);
-  var origSquares = Math.pow(leftRadius,2) + Math.pow(canvasWidth * mmFactor,2) - Math.pow(rightRadius,2);
-  var origCosC = origSquares / (2 * leftRadius * (canvasWidth * mmFactor));
+  var origSquares = Math.pow(leftRadius,2) + Math.pow(canvasWidth,2) - Math.pow(rightRadius,2);
+  var origCosC = origSquares / (2 * leftRadius * (canvasWidth));
   var origRadianAngle = Math.acos(origCosC);
-  var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth * mmFactor,2) - Math.pow(rightRadiusEnd,2);
-  var cosC = squares / (2 * leftRadius * (canvasWidth * mmFactor));
+  var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth,2) - Math.pow(rightRadiusEnd,2);
+  var cosC = squares / (2 * leftRadius * (canvasWidth));
   var radianAngle = Math.acos(cosC);
   var startAngle;
   var endAngle;
@@ -803,24 +914,29 @@ function getDistanceToTargetX(radius, distance, targetX) {
   console.log(useDistance);
   return useDistance;
 }
-function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
+function sliceLetter(letterParam,leftLength,rightLength) {
 	var slicedLetter = {};
 	var segments = [];
 	var letter = scaleLetter(letterParam);
 	console.log('letter X length ' + letter.points[0].length + ' Y length ' + letter.points.length);
-	console.log('cur X ' + curX + ' curY ' + curY);
 	// console.log('letter 0 0 is ' + letter.points[0][0]);
-	var firstX = curX;
-	var firstY = curY;
-	var lastX = curX + letter.points[0].length;
-	var lastY = curY + letter.points.length;
+	var startCoords = getCoordsForLengths(leftLength, rightLength);
+	var firstX = startCoords.X;
+	var firstY = startCoords.Y;
+	console.log('first X ' + firstX + ' firstY ' + firstY);
+	var letterWidth = letter.points[0].length * scaleFactor;
+	var letterHeight = letter.points.length * scaleFactor;
+	var lastX = firstX + letterWidth;
+	var lastY = firstY + letterHeight;
 	// console.log('lastX ' + lastX + ' lastY ' + lastY);
-	var doneLengths = getLengthsForCoords(lastX * mmFactor, firstY * mmFactor);
-	var bottomLengths = getLengthsForCoords(curX * mmFactor, lastY * mmFactor);
+	var doneLengths = getLengthsForCoords(lastX, firstY);
+	var bottomLengths = getLengthsForCoords(firstX, lastY);
+	// var doneLengths = getLengthsForCoords(lastX * mmFactor, firstY * mmFactor);
+	// var bottomLengths = getLengthsForCoords(curX * mmFactor, lastY * mmFactor);
 	console.log('doneLengths ' + JSON.stringify(doneLengths));
 	slicedLetter.doneLengths = doneLengths;
 	letterParam.bottomLengths = bottomLengths;
-	var lastLengths = getLengthsForCoords(lastX * mmFactor, lastY * mmFactor);
+	var lastLengths = getLengthsForCoords(lastX, lastY);
 	if (test) {
 		console.log('lastlengths ' + JSON.stringify(lastLengths));
 		console.log('leftLength ' + leftLength +' rightLength ' + rightLength);
@@ -828,13 +944,17 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 	var lastLeftAdjustment = 0;
 
 	var segment = 0;
+	var segmentCoords = {};
 	while (leftLength <= lastLengths.leftLength) {
-		var newCoords = getCoordsForRightChange(leftLength, rightLength,0);
-		var newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-		var newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+		var newCoords = getCoordsForLengths(leftLength, rightLength);
+		if (debug) console.log('looping with coords ' + JSON.stringify(newCoords));
+		// var newCoords = getCoordsForRightChange(leftLength, rightLength,0);
+		var newX = Math.abs(Math.round(newCoords.X)) - Math.abs(firstX);
+		var newY = Math.abs(Math.round(newCoords.Y)) - Math.abs(firstY);
+		if (debug) console.log('newX ' + newX + ' newY ' + newY);
 		var changes = 0;
 		var rightChanges = false;
-		while ((changes < 10)&& ((newY < 0)||(newY >= letter.points.length))) {
+		while ((changes < 10)&& ((newY < 0)||(newY >= letterHeight))) {
 			changes++;
 			if (debug)
 			console.log('adjusting from newX ' + newX + ' newY ' + newY);
@@ -845,16 +965,17 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 					if (debug)
 					console.log('increased rightLength to ' + rightLength);
 				}
-				if (newY >= letter.points.length) {
+				if (newY >= letterHeight) {
 					rightChanges = true;
 					rightLength -= spacing / 4;
 					if (debug)
 					console.log('decreased rightLength to ' + rightLength);
 				}
 			}
-			newCoords = getCoordsForRightChange(leftLength, rightLength,0);
-			newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-			newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+			newCoords = getCoordsForLengths(leftLength, rightLength);
+			// newCoords = getCoordsForRightChange(leftLength, rightLength,0);
+			newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
+			newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
 			if (debug)
 			console.log('adjusted newX ' + newX + ' newY ' + newY);
 		}
@@ -862,7 +983,7 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 			console.log('gave up looking right after ' + changes + ' tries');
 		}
 		changes = 0;
-		while ((!rightChanges)&&(changes < 10)&& ((newX < 0)||(newX >= letter.points[0].length))) {
+		while ((!rightChanges)&&(changes < 10)&& ((newX < 0)||(newX >= letterWidth))) {
 			changes++;
 			// if (lastLeftAdjustment == leftLength) break;
 			lastLeftAdjustment = leftLength;
@@ -874,15 +995,16 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 					if (debug)
 					console.log('increased leftLength to ' + leftLength);
 				}
-				if (newX >= letter.points[0].length) {
-					leftLength -= spacing
+				if (newX >= letterWidth) {
+					leftLength -= spacing;
 					if (debug)
 					console.log('decreased leftLength to ' + leftLength);
 				}
 			}
-			newCoords = getCoordsForRightChange(leftLength, rightLength,0);
-			newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-			newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+			newCoords = getCoordsForLengths(leftLength, rightLength);
+			// newCoords = getCoordsForRightChange(leftLength, rightLength,0);
+			newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
+			newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
 			if (debug)
 			console.log('adjusted newX ' + newX + ' newY ' + newY);
 		}
@@ -890,7 +1012,7 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 			console.log('gave up looking left after ' + changes + ' tries');
 		}
 		// console.log('checking for coords ' + Math.round(newCoords.X/mmFactor) + ' ' + Math.round(newCoords.Y/mmFactor) + ' (letter ' + newX + ' ' + newY + ')');
-		if ((newX >= 0) &&(newX < letter.points[0].length) && (newY >= 0) && (newY < letter.points.length)) {
+		if ((newX >= 0) &&(newX < letterWidth) && (newY >= 0) && (newY < letterHeight)) {
 			if (debug) console.log('processing Y ' + newY + ' X ' + newX);
 			// still within bounds for this letter
 			var lastRightSpacing;
@@ -901,39 +1023,51 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 			// var endRight = 0;
 			// console.log('backing out to top');
 			var steps = 0;
-			while ((newX >= 0) &&(newX < letter.points[0].length) && (newY >= 0) && (newY < letter.points.length)) {
+			while ((newX >= 0) &&(newX < letterWidth) && (newY >= 0) && (newY < letterHeight)) {
 				steps++;
 				lastRightSpacing = rightSpacing;
 				rightSpacing = rightSpacing - 5;
-				newCoords = getCoordsForRightChange(leftLength, rightLength,rightSpacing);
-				newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-				newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+				newCoords = getCoordsForLengths(leftLength, rightLength + rightSpacing);
+				// newCoords = getCoordsForRightChange(leftLength, rightLength,rightSpacing);
+				newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
+				newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
 			}
 			// console.log('out of letter bounds at ' + newY + ' ' + newX + ' after ' + steps + ' steps');
 			// reset to last point within bounds
-			newCoords = getCoordsForRightChange(leftLength, rightLength,lastRightSpacing);
-			newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-			newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+			newCoords = getCoordsForLengths(leftLength, rightLength + lastRightSpacing);
+			// newCoords = getCoordsForRightChange(leftLength, rightLength,lastRightSpacing);
+			newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
+			newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
+			if (steps > 0) {
+				console.log('adjusted right to ' + lastRightSpacing + ' newX ' + newX + ' newY ' + newY);
+			}
 			// startRight = lastRightSpacing;
 			// console.log('point ' + newY + ' ' + newX + ' is ' + letter.points[newY][newX]);
-			if (letter.points[newY][newX] === 1) {
+			if (letter.points[Math.trunc(newY/scaleFactor)][Math.trunc(newX/scaleFactor)] === 1) {
 				// console.log('setting startright');
+				segmentCoords.start = {X:Math.trunc(newX/scaleFactor),Y:Math.trunc(newY/scaleFactor)};
+	            // if (debug) console.log('Segment starts in location X ' + Math.trunc(newX/scaleFactor) + ' Y ' + Math.trunc(newY/scaleFactor));
 				startRight = lastRightSpacing;
 			}
 			// console.log('walking to bottom');
 			steps = 0;
-			while ((newX >= 0) &&(newX < letter.points[0].length) && (newY >= 0) && (newY < letter.points.length)) {
+			while ((newX >= 0) &&(newX < letterWidth) && (newY >= 0) && (newY < letterHeight)) {
 				steps++;
-				letter.slicedPoints[newY][newX] = 1;
+				letter.slicedPoints[Math.trunc(newY/scaleFactor)][Math.trunc(newX/scaleFactor)] = 1;
+				// letter.slicedPoints[newY][newX] = 1;
 		        // console.log('newY ' + newY + ' newX ' + newX + ' marked sliced');
-		        if (letter.points[newY][newX] === 1) {
+		        if (letter.points[Math.trunc(newY/scaleFactor)][Math.trunc(newX/scaleFactor)] === 1) {
 		          if (isNaN(startRight)) {
 		            // console.log('setting startRight at ' + newY + ' ' + newX);
+		            // if (debug) console.log('segment starts in location X ' + Math.trunc(newX/scaleFactor) + ' Y ' + Math.trunc(newY/scaleFactor));
+					console.log('found segment to draw with right ' + lastRightSpacing + ' newX ' + newX + ' newY ' + newY);
+					segmentCoords.start = {X:Math.trunc(newX/scaleFactor),Y:Math.trunc(newY/scaleFactor)};
+					if (debug) console.log('setting startRight to ' + lastRightSpacing);
 		            startRight = lastRightSpacing;
 		          }
 		        } else {
 		          if (!isNaN(startRight)) {
-		            // console.log('got to end of segment');
+		            if (debug) console.log('got to end of segment');
 		            if (debug) console.log('startRight ' + startRight + ' end of segment ' + lastRightSpacing);
 		            if (debug) console.log('absolute startRight ' + (rightLength + startRight) + ' end of segment ' + (rightLength + lastRightSpacing));
 					var angles = getAngleForRightLengths(leftLength,rightLength + startRight,rightLength + lastRightSpacing);
@@ -942,6 +1076,10 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 					if (Math.abs((rightLength + startRight)-(rightLength + lastRightSpacing)) < 10) {
 						if (debug) console.log('skipping short segment');
 					} else {
+			            if (debug) {
+			            	var cLength = Math.sqrt(Math.pow(Math.trunc(newX/scaleFactor)-segmentCoords.start.X,2)+Math.pow(Math.trunc(newY/scaleFactor)-segmentCoords.start.Y,2));
+			            	console.log('segment ' + segments.length + ' coords ' + JSON.stringify(segmentCoords.start) + ' X ' + Math.trunc(newX/scaleFactor) + ' Y ' + Math.trunc(newY/scaleFactor) + ' length ' + cLength);
+			            }
 			            segments.push({'segment':segment,'leftLength':leftLength,
 			            	'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing),
 			            	'angles':angles});
@@ -952,14 +1090,16 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 		        }
 				lastRightSpacing = rightSpacing;
 				rightSpacing = rightSpacing + 5;
-				newCoords = getCoordsForRightChange(leftLength, rightLength,rightSpacing);
-				newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-				newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+				newCoords = getCoordsForLengths(leftLength, rightLength + rightSpacing);
+				// newCoords = getCoordsForRightChange(leftLength, rightLength,rightSpacing);
+				newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
+				newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
 			}
 			// reset to last point within bounds
-			newCoords = getCoordsForRightChange(leftLength, rightLength,lastRightSpacing);
-			newX = Math.abs(Math.round(newCoords.X / mmFactor)) - Math.abs(firstX);
-			newY = Math.abs(Math.round(newCoords.Y / mmFactor)) - Math.abs(firstY);
+			newCoords = getCoordsForLengths(leftLength, rightLength + lastRightSpacing);
+			// newCoords = getCoordsForRightChange(leftLength, rightLength,lastRightSpacing);
+			newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
+			newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
 			if (debug) console.log('newY ' + newY + ' newX ' + newX);
 
 			// console.log('out of letter bounds at ' + newY + ' ' + newX + ' after ' + steps + ' steps');
@@ -971,6 +1111,10 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 				// var angles = getAngleForRightChange(leftLength,rightLength + startRight,lastRightSpacing);
 				// var angles = getAngleForRightChange(leftLength,rightLength + startRight,(rightLength + startRight) - (rightLength + lastRightSpacing));
 				if (debug) console.log('angles are ' + JSON.stringify(angles));
+	            if (debug) {
+	            	var cLength = Math.sqrt(Math.pow(Math.trunc(newX/scaleFactor)-segmentCoords.start.X,2)+Math.pow(Math.trunc(newY/scaleFactor)-segmentCoords.start.Y,2));
+	            	console.log('segment ' + segments.length + ' coords ' + JSON.stringify(segmentCoords.start) + ' X ' + Math.trunc(newX/scaleFactor) + ' Y ' + Math.trunc(newY/scaleFactor) + ' length ' + cLength);
+	            }
 	            segments.push({'segment':segment,'leftLength':leftLength,
 	            	'rightLengthStart':(rightLength + startRight),'rightLengthEnd':(rightLength + lastRightSpacing),
 	            	'angles':angles});
@@ -985,16 +1129,18 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 			if (debug) console.log('lastlengths ' + JSON.stringify(lastLengths));
 			if (debug) console.log('leftLength ' + leftLength +' rightLength ' + rightLength);
 			if (debug) console.log('newX ' + newX + ' newY ' + newY);
+			if (debug) console.log('letterWidth ' + letterWidth + ' letterHeight ' + letterHeight);
 			if (debug) console.log('x points '+ letter.points[0].length + ' y points ' + letter.points.length);
 			// done!
 			break;
 			// console.log('breaking');
 			var anotherPoint = 0;
-			for (var ly=0;ly<letter.points.length;ly++) { 
-				for (var lx=0;lx<letter.points[0].length;lx++) {
-					if (letter.slicedPoints[ly][lx] != 1) {
+			for (var ly=0;ly<letterHeight;ly++) { 
+				for (var lx=0;lx<letterWidth.length;lx++) {
+					if (letter.slicedPoints[Math.trunc(ly/scaleFactor)][Math.trunc(lx/scaleFactor)] != 1) {
+					// if (letter.slicedPoints[ly][lx] != 1) {
 						if (debug) console.log('point '+ly +' '+lx+' unsliced');
-						var lengths = getLengthsForCoords((lx + firstX) * mmFactor,(ly + firstY) * mmFactor);
+						var lengths = getLengthsForCoords((lx + firstX) ,(ly + firstY));
 						if (debug) console.log('firstY ' + firstY + ' firstX ' + firstX);
 						if (debug) console.log('got coord lengths ' + JSON.stringify(lengths));
 						if (debug) console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
@@ -1005,13 +1151,13 @@ function sliceLetter(letterParam,leftLength,rightLength,curX,curY) {
 					}
 					}
 					if (anotherPoint === 1) {
-						// console.log('got another point, breaking');
+						if (debug) console.log('got another point, breaking');
 						break;
 					}
 			}
 			// console.log('second break');
 			if (anotherPoint === 0) {
-				// console.log('no more points, breaking');
+				if (debug) console.log('no more points, breaking');
 				break;
 			}
 		}
@@ -1073,6 +1219,7 @@ function scaleLetter(letter) {
 		var returnLetter = {};
 		returnLetter.points = letter.points.slice(0);
 		returnLetter.slicedPoints = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill(0));
+		// returnLetter.slicedPoints = new Array(letter.height * scaleFactor).fill({}).map(()=>new Array(letter.width * scaleFactor).fill(0));
 		return returnLetter;
 	} else {
 		var smoothing = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill({}));
@@ -1098,6 +1245,7 @@ function scaleLetter(letter) {
 							"height": Math.round(letter.height * scale)};
 		returnLetter.points = new Array(letter.height * scale).fill(0).map(() => new Array(letter.width * scale).fill(0));
 		returnLetter.slicedPoints = new Array(letter.height * scale).fill(0).map(() => new Array(letter.width * scale).fill(0));
+		// returnLetter.slicedPoints = new Array(letter.height * scale * scaleFactor).fill(0).map(() => new Array(letter.width * scale * scaleFactor).fill(0));
 		if (debug) {
 			console.log('returnLetter is ' + JSON.stringify(returnLetter));
 		}
@@ -1160,7 +1308,7 @@ function outputPreviewHeader() {
 previewWriteStream.write('<head>\r\n','ascii');
 previewWriteStream.write('</head>\r\n','ascii');
 previewWriteStream.write('<body bgcolor="#ffffff">\r\n','ascii');
-previewWriteStream.write('<canvas id="myCanvas" width="' + (canvasWidth * 2) + '" height="' + canvasHeight + '" style="border:1px solid #d3d3d3;">\r\n','ascii');
+previewWriteStream.write('<canvas id="myCanvas" width="' + (canvasWidth * 4) + '" height="' + (canvasHeight * 2) + '" style="border:1px solid #d3d3d3;">\r\n','ascii');
 previewWriteStream.write('Your browser does not support the HTML5 canvas tag.</canvas>\r\n','ascii');
 previewWriteStream.write('<script>\r\n','ascii');
 previewWriteStream.write('var c = document.getElementById("myCanvas");\r\n','ascii');
@@ -1170,19 +1318,25 @@ previewWriteStream.write('var segments=[\r\n','ascii');
 function outputPreviewFooter() {
 	previewWriteStream.write('];\r\n','ascii');
 previewWriteStream.write('var ctx = c.getContext("2d");\r\n','ascii');
-previewWriteStream.write('ctx.beginPath();\r\n','ascii');
 previewWriteStream.write('var seg;\r\n','ascii');
 previewWriteStream.write('while (seg = segments.shift()) {\r\n','ascii');
+previewWriteStream.write('ctx.beginPath();\r\n','ascii');
 previewWriteStream.write('console.log(\'drawing segment for \' + JSON.stringify(seg));\r\n','ascii');
-previewWriteStream.write('if (seg.angles) {\r\n','ascii');
+previewWriteStream.write('if (seg.angles1) {\r\n','ascii');
 previewWriteStream.write('ctx.beginPath();\r\n','ascii');
 previewWriteStream.write('ctx.arc(0,0,(seg.leftLength/5),seg.angles.origRadianAngle,seg.angles.finalRadianAngle);\r\n','ascii');
 previewWriteStream.write('ctx.stroke();\r\n','ascii');
 previewWriteStream.write('} else {	\r\n','ascii');
-previewWriteStream.write('ctx.moveTo((seg.leftLength/5)-300,(seg.rightLengthStart / 5)-300);\r\n','ascii');
-previewWriteStream.write('ctx.lineTo((seg.leftLength / 5)-300,(seg.rightLengthEnd / 5)-300);\r\n','ascii');
+previewWriteStream.write('ctx.moveTo((seg.leftLength),(seg.rightLengthStart));\r\n','ascii');
+previewWriteStream.write('ctx.lineTo((seg.leftLength),(seg.rightLengthEnd));\r\n','ascii');
+previewWriteStream.write('if (seg.style) {\r\n','ascii');
+previewWriteStream.write('ctx.strokeStyle = seg.style;\r\n','ascii');
+previewWriteStream.write('} else {\r\n','ascii');
+previewWriteStream.write('ctx.strokeStyle = \'black\';\r\n','ascii');
+previewWriteStream.write('}\r\n','ascii');
 previewWriteStream.write('ctx.stroke();\r\n','ascii');
 previewWriteStream.write('}\r\n','ascii');
+previewWriteStream.write('ctx.closePath();\r\n','ascii');
 previewWriteStream.write('}\r\n','ascii');
 previewWriteStream.write('ctx.stroke();\r\n','ascii');
 previewWriteStream.write('</script>\r\n','ascii');
