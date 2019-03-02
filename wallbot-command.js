@@ -319,7 +319,7 @@ replServer.defineCommand('write',{
 				console.log('writing :' + message[i] + ':');
 				if (message[i] == ' ') {
 					commandList.push('g ' + (letters[font].spaceWidth * scale) + ' 0');
-					letterX += (letters[font].spaceWidth * scale) * mmFactor;
+					letterX += (letters[font].spaceWidth * scale);
 					continue;
 				} else if (message[i] == '\\') {
 					control = true;
@@ -329,12 +329,12 @@ replServer.defineCommand('write',{
 						console.log('got slash-r');
 
 						// console.log('maxHeight is ' + maxHeight + ' curX ' + curX + ' letterX ' + letterX);
-						var xDiff = curX - (letterX / mmFactor);
+						var xDiff = curX - (letterX);
 						var yDiff = (maxHeight + 3) * scale;
 						console.log('xDiff ' + xDiff + ' yDiff ' + yDiff);
 						// commandList.push('g ' + xDiff + ' ' + yDiff);
-						letterX += xDiff * mmFactor;
-						letterY += yDiff * mmFactor;
+						letterX += xDiff;
+						letterY += yDiff;
 
 						if (bottomLengths != null) {
 							var rDiff = rightLength - bottomLengths.rightLength;
