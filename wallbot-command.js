@@ -337,8 +337,8 @@ replServer.defineCommand('write',{
 						letterY += yDiff;
 
 						if (bottomLengths != null) {
-							var rDiff = rightLength - bottomLengths.rightLength;
-							var lDiff = leftLength - bottomLengths.leftLength;
+							var rDiff = plannedRightLength - bottomLengths.rightLength;
+							var lDiff = plannedLeftLength - bottomLengths.leftLength;
 							console.log('rDiff ' + rDiff + ' lDiff ' + lDiff);
 							commandList.push('r ' + rDiff);
 							plannedRightLength += rDiff;
