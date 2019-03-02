@@ -375,7 +375,6 @@ replServer.defineCommand('write',{
 						console.log('letterX ' + letterX + ' letterY ' + letterY + ' got lengths ' + JSON.stringify(lengths));
 						console.log('planned lengths left ' + plannedLeftLength + ' right ' + plannedRightLength);
 						var doneLengths = writeBlockLetter(l,lengths.leftLength,lengths.rightLength);
-						console.log('done writing letter ' + message[i] + ' doneLengths ' + JSON.stringify(doneLengths));
 						plannedLeftLength = doneLengths.leftLength;
 						plannedRightLength = doneLengths.rightLength;
 						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
@@ -383,6 +382,7 @@ replServer.defineCommand('write',{
 							bottomLengths = l.bottomLengths;
 						}
 						letterX += (l.width * scale) * mmFactor;
+						console.log('done writing letter ' + message[i] + ' doneLengths ' + JSON.stringify(doneLengths) + ' letterX ' + letterX + ' letterY ' + letterY);
 					}
 					first = false;
 				} else {
