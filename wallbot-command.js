@@ -362,7 +362,7 @@ replServer.defineCommand('write',{
 						if (!first) {
 							// make space
 							commandList.push('g ' + (2 * scale) + ' 0');
-							letterX += (2 * scale) * mmFactor;
+							letterX += (2 * scale);
 						}
 						writeLineLetter(l);
 					} else if (letters[font].style=='block') {
@@ -381,7 +381,7 @@ replServer.defineCommand('write',{
 						if (bottomLengths == null) {
 							bottomLengths = l.bottomLengths;
 						}
-						letterX += (l.width * scale) * mmFactor;
+						letterX += (l.width * scale);
 						console.log('done writing letter ' + message[i] + ' doneLengths ' + JSON.stringify(doneLengths) + ' letterX ' + letterX + ' letterY ' + letterY);
 					}
 					first = false;
