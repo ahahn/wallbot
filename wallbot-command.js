@@ -34,9 +34,10 @@ var test = false;
 var debug = false;
 var font = 'lineLetters';
 var lift = false;
-var liftGap = 40;
+var liftGap = 20;
 var unidirectional = false;
 var pause = false;
+var invert = false;
 
 var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
 var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
@@ -72,6 +73,13 @@ replServer.defineCommand('pause',{
 	help: 'Stop sending pending commands',
 	action() {
 		pause = true;
+	}
+});
+replServer.defineCommand('invert',{
+	help: 'Write backwards',
+	action() {
+		invert = !invert;
+		console.log('set invert ' + invert);
 	}
 });
 replServer.defineCommand('start',{
@@ -281,6 +289,7 @@ replServer.defineCommand('status',{
 		console.log('Lift:',lift);
 		console.log('Lift gap:',liftGap);
 		console.log('Unidirectional:' + unidirectional);
+		console.log('Invert:' + invert);
 	}
 });
 replServer.defineCommand('mode',{
@@ -354,6 +363,9 @@ replServer.defineCommand('write',{
 				}
 				control = false;
 				let l = letters[font][message[i]];
+				if (invert) {
+					l = invertLetter(l);
+				}
 				if (debug) console.log('letter is ' + JSON.stringify(l));
 				if ((l) && (Object.keys(l).length > 0)) {
 					console.log('writing ' + message[i]);
@@ -406,6 +418,22 @@ replServer.defineCommand('write',{
 
 	}
 });
+function invertLetter(letter) {
+	var inverted = {};
+	console.log('inverting letter ' + JSON.stringify(letter));
+	Object.assign(inverted, letter);
+	var points = letter.points;
+	inverted.points = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill(0));
+	for (let y = 0; y < letter.points.length;y++) {
+		let row = letter.points[y];
+		for (let x = row.length;x > 0; x--) {
+			inverted.points[y][row.length - x] = row[x - 1];
+		}
+	}
+	console.log('original points ' + JSON.stringify(letter.points));
+	console.log('inverted points ' + JSON.stringify(inverted.points));
+	return inverted;
+}
 function writeBlockLetter(letter,leftLength,rightLength) {
 	console.log('slicing letter ' + JSON.stringify(letter) + ' font ' + font);
 	console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
@@ -855,23 +883,20 @@ function getCoordsForRightChange(leftRadius,rightRadius,rightChange) {
 function getCoordsForLengths(leftVal,rightVal) {
 	// console.log('getting coords for lengths left ' + leftRadius + ' right ' + rightRadius + ' canvasWidth ' + canvasWidth);
 	// cos(C) = (a^2 + b^2 - c^2)/2ab
-	// var leftRadius = leftVal + 10;
-	// var rightRadius = rightVal + 10;
 	var leftRadius = leftVal - 10;
 	var rightRadius = rightVal - 10;
 	var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth ,2) - Math.pow(rightRadius,2);
-	if (debug) console.log('squares ' + squares);
+	// if (debug) console.log('squares ' + squares);
 	var cosC = (squares / (2 * leftRadius * (canvasWidth)))	;
-	// var cosC = (squares / (2 * leftRadius * (canvasWidth * mmFactor)))	;
-	if (debug) console.log('cosC ' + cosC);
+	// if (debug) console.log('cosC ' + cosC);
 	var radianAngle = Math.acos(cosC);
 	if (isNaN(radianAngle)) {
 		console.log('NaN radianAngle for left ' + leftRadius + ' right ' + rightRadius + ' canvasWidth ' + canvasWidth);
 	}
-	if (debug) {
-		console.log('radianAngle ' + radianAngle);
-		console.log('degree angle ' + (radianAngle * 180 / Math.PI));
-	}
+	// if (debug) {
+	// 	console.log('radianAngle ' + radianAngle);
+	// 	console.log('degree angle ' + (radianAngle * 180 / Math.PI));
+	// }
 	var x = Math.round(leftRadius * Math.sin(radianAngle + (Math.PI / 2)));
 	var y = Math.round(leftRadius * Math.cos(radianAngle + (Math.PI / 2))) * -1;
 	return {"X":x,"Y":y};
@@ -1086,7 +1111,7 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 				lastRightSpacing = rightSpacing;
 				rightSpacing = rightSpacing - 5;
 				newCoords = getCoordsForLengths(leftLength, rightLength + rightSpacing);
-				console.log('leftLength ' + leftLength + ' rightLength ' + rightLength + ' rightSpacing ' + rightSpacing + ' newCoords ' + JSON.stringify(newCoords) + ' newX ' + (Math.abs(Math.round(newCoords.X )) - Math.abs(firstX)) + ' newY ' + (Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY)));
+				// console.log('leftLength ' + leftLength + ' rightLength ' + rightLength + ' rightSpacing ' + rightSpacing + ' newCoords ' + JSON.stringify(newCoords) + ' newX ' + (Math.abs(Math.round(newCoords.X )) - Math.abs(firstX)) + ' newY ' + (Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY)));
 				// newCoords = getCoordsForRightChange(leftLength, rightLength,rightSpacing);
 				newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
 				newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
