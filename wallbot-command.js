@@ -339,7 +339,7 @@ replServer.defineCommand('write',{
 						console.log('got slash-r');
 
 						// console.log('maxHeight is ' + maxHeight + ' curX ' + curX + ' letterX ' + letterX);
-						var xDiff = curX - (lineStartX);
+						var xDiff = lineStartX - letterX;
 						var yDiff = (maxHeight + 3) * scale;
 						console.log('xDiff ' + xDiff + ' yDiff ' + yDiff);
 						// commandList.push('g ' + xDiff + ' ' + yDiff);
