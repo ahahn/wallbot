@@ -143,14 +143,27 @@ replServer.defineCommand('go',{
 replServer.defineCommand('coords',{
 	help: 'Report coordinates of specified <left> <right> lengths',
 	action(lengths) {
-		console.log('read lengths',lengths);
+		console.log('read lengths '+lengths+ ' canvasWidth ' + canvasWidth);
 		var c = lengths.match(/-?\d+/g).map(Number);
 		console.log('left ',c[0]);
 		console.log('right ',c[1]);
 		var coords = getCoordsForLengths(c[0],c[1]);
 		console.log('got coords ' + JSON.stringify(coords));
-		var lengths = getLengthsForCoords(coords.X,coords.Y);
+		var l = getLengthsForCoords(coords.X,coords.Y);
+		console.log('got lengths ' + JSON.stringify(l));
+	}
+});
+replServer.defineCommand('lengths',{
+	help: 'Report lengths of specified <left> <right> coordinates',
+	action(coords) {
+		console.log('read coords '+coords+ ' canvasWidth ' + canvasWidth);
+		var c = coords.match(/-?\d+/g).map(Number);
+		console.log('X ',c[0]);
+		console.log('Y ',c[1]);
+		var lengths = getLengthsForCoords(c[0],c[1]);
 		console.log('got lengths ' + JSON.stringify(lengths));
+		var coords = getCoordsForLengths(lengths.leftLength,lengths.rightLength);
+		console.log('got coords ' + JSON.stringify(coords));
 	}
 });
 replServer.defineCommand('canvas',{
@@ -180,6 +193,8 @@ replServer.defineCommand('canvas',{
 		curY = Math.round(canvasHeight/2);
 		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth/ 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
 		leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
+		var l = getLengthsForCoords(canvasWidth/2,canvasHeight/2);
+		console.log('formulaic lengths ' + JSON.stringify(l));
 		// rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 		// leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth * mmFactor / 2, 2)+Math.pow(canvasHeight * mmFactor /2, 2)));
 		console.log('leftLength ' + leftLength + ' rightLength ' + rightLength);
@@ -254,6 +269,7 @@ replServer.defineCommand('status',{
 	help: 'Read status of variables',
 	action() {
 		console.log('Current status:');
+		console.log('Canvas width ' + canvasWidth + ' height ' + canvasHeight);
 		console.log('Lengths Left ' + leftLength + ' Right ' + rightLength);
 		console.log('Coords X ' + curX + ' Y ' + curY);
 		console.log('Test:',test);
@@ -353,7 +369,10 @@ replServer.defineCommand('write',{
 						}
 						var lengths = getLengthsForCoords(letterX,letterY);
 						console.log('letterX ' + letterX + ' letterY ' + letterY + ' got lengths ' + JSON.stringify(lengths));
-						writeBlockLetter(l,lengths.leftLength,lengths.rightLength);
+						var doneLengths = writeBlockLetter(l,lengths.leftLength,lengths.rightLength);
+						console.log('done writing letter ' + message[i] + ' doneLengths ' + JSON.stringify(doneLengths));
+						leftLength = doneLengths.leftLength;
+						rightLength = doneLengths.rightLength;
 						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
 						if (bottomLengths == null) {
 							bottomLengths = l.bottomLengths;
@@ -368,7 +387,13 @@ replServer.defineCommand('write',{
 			outputPreviewFooter();
 			previewWriteStream.end();
 			if (commandList.length > 0) {
-				sendCommand(commandList.shift());
+				if (test) {
+					while (commandList.length > 0) {
+						sendCommand(commandList.shift());
+					}
+				} else {
+					sendCommand(commandList.shift());
+				}
 			}
 		} else {
 			console.log('Usage: write <string>');
@@ -387,7 +412,12 @@ function writeBlockLetter(letter,leftLength,rightLength) {
 	// curY = Math.abs(Math.round(coords.Y / mmFactor));
 	var startLeft = leftLength;
 	var startRight = rightLength;
+	var doneLengths = {leftLength: leftLength,rightLength:rightLength};
 	var slicedLetter = sliceLetter(letter,leftLength,rightLength);
+	if (slicedLetter.doneLengths) {
+		console.log('back from sliceLetter, doneLengths ' + JSON.stringify(slicedLetter.doneLengths));
+		doneLengths = slicedLetter.doneLengths;
+	}
 	if (debug) console.log('calling optimizePaths');
 	slicedLetter.finalSegments = optimizePaths(slicedLetter.segments);
 	if (debug) console.log('back from optimizePaths');
@@ -401,6 +431,7 @@ function writeBlockLetter(letter,leftLength,rightLength) {
 		drawSegments(letter,slicedLetter,leftLength,rightLength);
 	}
 	sendNextCommand();
+	return doneLengths;
 }
 function sendNextCommand() {
 	if (!test) {
@@ -713,8 +744,10 @@ function sendCommand(command) {
 			rightLength += c[0]/mmFactor;
 			// rightLength += c/mmFactor;
 			var coords = getCoordsForLengths(leftLength,rightLength);
-			curX = Math.abs(Math.round(coords.X / mmFactor));
-			curY = Math.abs(Math.round(coords.Y / mmFactor));
+			curX = Math.abs(Math.round(coords.X));
+			curY = Math.abs(Math.round(coords.Y));
+			// curX = Math.abs(Math.round(coords.X / mmFactor));
+			// curY = Math.abs(Math.round(coords.Y / mmFactor));
 			console.log('coords ' + JSON.stringify(coords) + ' curX ' + curX + ' curY ' + curY + ' leftLength ' + leftLength + ' rightLength ' + rightLength);
 		}
 	} else 	if (command.trim().startsWith('l')) {
@@ -723,19 +756,23 @@ function sendCommand(command) {
 			leftLength += c[0]/mmFactor;
 			// leftLength += c/mmFactor;
 			var coords = getCoordsForLengths(leftLength,rightLength);
-			curX = Math.abs(Math.round(coords.X / mmFactor));
-			curY = Math.abs(Math.round(coords.Y / mmFactor));
+			curX = Math.abs(Math.round(coords.X));
+			curY = Math.abs(Math.round(coords.Y));
+			// curX = Math.abs(Math.round(coords.X / mmFactor));
+			// curY = Math.abs(Math.round(coords.Y / mmFactor));
 			console.log('coords ' + JSON.stringify(coords) + ' curX ' + curX + ' curY ' + curY + ' leftLength ' + leftLength + ' rightLength ' + rightLength);
 		}
 	} else if (command.trim().startsWith('g')) {
-		var c = command.substring(1).match(/-?\d+/g).map(Number);		
+		var c = command.substring(1).match(/-?\d+/g).map(Number);
+		console.log('starting at X ' + curX + ' Y ' + curY);
+		console.log('moving by X ' + c[0] + ' Y ' + c[1]);	
 		var lengths = getLengthsForCoords(curX + c[0],curY + c[1]);
 		console.log('got lengths ' + JSON.stringify(lengths));
 		leftLength = lengths.leftLength;
 		rightLength = lengths.rightLength;
 		curX += c[0];
 		curY += c[1];
-
+		console.log('ended at X ' + curX + ' Y ' + curY);
 	}
 }
 
@@ -772,8 +809,12 @@ function goByArcs(x,y,ll,rl) {
 function getLengthsForCoords(x,y) {
 	var xSteps = x;
 	var ySteps = y;
-	var leftLength = Math.round(Math.sqrt(Math.pow(xSteps,2) + Math.pow(ySteps,2)));
-	var rightLength = Math.round(Math.sqrt(Math.pow((canvasWidth)-xSteps,2) + Math.pow(ySteps,2)));
+// var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
+// var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
+// 52.900 = x2, x=230
+// 122.500 = Y2, y=350
+	var leftLength = Math.round(Math.sqrt(Math.pow(xSteps,2) + Math.pow(ySteps,2))) + 10;
+	var rightLength = Math.round(Math.sqrt(Math.pow((canvasWidth)-xSteps,2) + Math.pow(ySteps,2))) + 10;
 	return({'leftLength':leftLength,'rightLength':rightLength});
  }
 function getCoordsForRightChange(leftRadius,rightRadius,rightChange) {
@@ -798,22 +839,26 @@ function getCoordsForRightChange(leftRadius,rightRadius,rightChange) {
   // console.log(y);
   return {"X":x,"Y":y};
  }
-function getCoordsForLengths(leftRadius,rightRadius) {
+function getCoordsForLengths(leftVal,rightVal) {
 	// console.log('getting coords for lengths left ' + leftRadius + ' right ' + rightRadius + ' canvasWidth ' + canvasWidth);
 	// cos(C) = (a^2 + b^2 - c^2)/2ab
+	// var leftRadius = leftVal + 10;
+	// var rightRadius = rightVal + 10;
+	var leftRadius = leftVal - 10;
+	var rightRadius = rightVal - 10;
 	var squares = Math.pow(leftRadius,2) + Math.pow(canvasWidth ,2) - Math.pow(rightRadius,2);
-	// if (debug) console.log('squares ' + squares);
+	if (debug) console.log('squares ' + squares);
 	var cosC = (squares / (2 * leftRadius * (canvasWidth)))	;
 	// var cosC = (squares / (2 * leftRadius * (canvasWidth * mmFactor)))	;
-	// if (debug) console.log('cosC ' + cosC);
+	if (debug) console.log('cosC ' + cosC);
 	var radianAngle = Math.acos(cosC);
 	if (isNaN(radianAngle)) {
 		console.log('NaN radianAngle for left ' + leftRadius + ' right ' + rightRadius + ' canvasWidth ' + canvasWidth);
 	}
-	// if (debug) {
-	// 	console.log('radianAngle ' + radianAngle);
-	// 	console.log('degree angle ' + (radianAngle * 180 / Math.PI));
-	// }
+	if (debug) {
+		console.log('radianAngle ' + radianAngle);
+		console.log('degree angle ' + (radianAngle * 180 / Math.PI));
+	}
 	var x = Math.round(leftRadius * Math.sin(radianAngle + (Math.PI / 2)));
 	var y = Math.round(leftRadius * Math.cos(radianAngle + (Math.PI / 2))) * -1;
 	return {"X":x,"Y":y};
@@ -1015,7 +1060,7 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 		if ((newX >= 0) &&(newX < letterWidth) && (newY >= 0) && (newY < letterHeight)) {
 			if (debug) console.log('processing Y ' + newY + ' X ' + newX);
 			// still within bounds for this letter
-			var lastRightSpacing;
+			var lastRightSpacing = 0;
 			var rightSpacing = 0;
 			var startRight = NaN;
 			var endRight = NaN;
@@ -1028,6 +1073,7 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 				lastRightSpacing = rightSpacing;
 				rightSpacing = rightSpacing - 5;
 				newCoords = getCoordsForLengths(leftLength, rightLength + rightSpacing);
+				console.log('leftLength ' + leftLength + ' rightLength ' + rightLength + ' rightSpacing ' + rightSpacing + ' newCoords ' + JSON.stringify(newCoords) + ' newX ' + (Math.abs(Math.round(newCoords.X )) - Math.abs(firstX)) + ' newY ' + (Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY)));
 				// newCoords = getCoordsForRightChange(leftLength, rightLength,rightSpacing);
 				newX = Math.abs(Math.round(newCoords.X )) - Math.abs(firstX);
 				newY = Math.abs(Math.round(newCoords.Y )) - Math.abs(firstY);
@@ -1163,6 +1209,7 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 		}
 	}
 	console.log('done letter, lenghts left ' + leftLength + ' right ' + rightLength);
+	// slicedLetter.doneLengths = {leftLength:leftLength,rightLength:rightLength};
 	var seg;
 	// while (seg = segments.shift()) {
 	// 	console.log('segment: ' + JSON.stringify(seg));
