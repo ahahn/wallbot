@@ -1,4 +1,6 @@
 # wallbot
+![Overview of complete Wallbot](images/wallbot-overview.jpg?raw=true "Wallbot Overview")
+
 This is the complete repo for my wallbot project.
 The wallbot is a simple two-motor Cartesian robot that draws on vertical surfaces.  I use it to draw on whiteboards and windows with dry erase markers.
 The designs directory has all of the laser cut designs to make the physical parts of the machine.
