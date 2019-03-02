@@ -424,12 +424,14 @@ function writeBlockLetter(letter,leftLength,rightLength) {
 
 	leftLength = startLeft;
 	rightLength = startRight;
+	var actualLengths;
 	if (unidirectional) {
-		drawSegmentsUnidirectional(letter,slicedLetter,leftLength,rightLength);
+		actualLengths = drawSegmentsUnidirectional(letter,slicedLetter,leftLength,rightLength);
 	} else {
 		console.log('drawing segments from letter ' + JSON.stringify(letter) + ' font ' + font);
-		drawSegments(letter,slicedLetter,leftLength,rightLength);
+		actualLengths = drawSegments(letter,slicedLetter,leftLength,rightLength);
 	}
+	console.log('doneLengths ' + JSON.stringify(doneLengths) + ' actualLengths ' + JSON.stringify(actualLengths));
 	sendNextCommand();
 	return doneLengths;
 }
@@ -626,7 +628,9 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 	var rightDiff = slicedLetter.doneLengths.rightLength - curRight;
 	console.log('leftDiff ' + leftDiff + ' rightDiff ' + rightDiff);
 	commandList.push('r ' + rightDiff);
+	curRight += rightDiff;
 	commandList.push('l ' + leftDiff);
+	curLeft += leftDiff;
 	// var endCoords = getCoordsForLeftChange(curRight,curLeft,0);
 	// var targetX = startCoords.X + ((letter.width * scale) * mmFactor);
 	// console.log('startcoords ' + JSON.stringify(startCoords) + ' endcoords ' + JSON.stringify(endCoords) + ' diff Y ' + (startCoords.Y - endCoords.Y) + ' X ' + (targetX - endCoords.X) + ' tagetX ' + targetX);
@@ -634,6 +638,7 @@ function drawSegments(letter,slicedLetter,leftLength,rightLength) {
 	// 	commandList.push('g ' + (targetX - endCoords.X) +' ' + (startCoords.Y - endCoords.Y));
 	// }
 	commandList.push('p');
+	return {"leftLength":curLeft,"rightLength":curRight};
 }
 function drawSegmentsUnidirectional(letter,slicedLetter,leftLength,rightLength) {
 	var c;
@@ -670,7 +675,10 @@ function drawSegmentsUnidirectional(letter,slicedLetter,leftLength,rightLength) 
 	var rightDiff = slicedLetter.doneLengths.rightLength - curRight;
 	console.log('leftDiff ' + leftDiff + ' rightDiff ' + rightDiff);
 	commandList.push('r ' + rightDiff);
+	curRight += rightDiff;
 	commandList.push('l ' + leftDiff);
+	curLeft += leftDiff;
+	return {"leftLength":curLeft,"rightLength":curRight};
 }
 replServer.defineCommand('left',{
 	help: 'Change left length distance specified',
