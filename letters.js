@@ -2,6 +2,12 @@ module.exports = {
 	block:{
 	"style":"block",
 	"spaceWidth": 12,
+	"smoothings":[
+	{"type":"up_right_outside","inverse":"down_right_outside"},
+	{"type":"down_right_outside","inverse":"up_right_outside"},
+	{"type":"up_right_inside","inverse":"down_right_inside"},
+	{"type":"down_right_inside","inverse":"up_right_inside"},
+	],
 "A": {"width":10,"height":16,points:[
 [0,0,0,0,1,1,0,0,0,0],
 [0,0,0,1,1,1,1,0,0,0],

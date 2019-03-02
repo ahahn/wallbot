@@ -420,7 +420,7 @@ replServer.defineCommand('write',{
 });
 function invertLetter(letter) {
 	var inverted = {};
-	console.log('inverting letter ' + JSON.stringify(letter));
+	// console.log('inverting letter ' + JSON.stringify(letter));
 	Object.assign(inverted, letter);
 	var points = letter.points;
 	inverted.points = new Array(letter.height).fill({}).map(()=>new Array(letter.width).fill(0));
@@ -430,8 +430,29 @@ function invertLetter(letter) {
 			inverted.points[y][row.length - x] = row[x - 1];
 		}
 	}
-	console.log('original points ' + JSON.stringify(letter.points));
-	console.log('inverted points ' + JSON.stringify(inverted.points));
+	if (letter.smoothing) {
+		inverted.smoothing = [];
+		for (let s of letter.smoothing) {
+			var invertedSmoothing = s.type;
+			if (letters[font].smoothings) {
+				for (let fs of letters[font].smoothings) {
+					if (fs.type === s.type) {
+						invertedSmoothing = fs.inverse;
+						break;
+					}
+				}
+			}
+			let newSmooth = {"type":invertedSmoothing,"points":[]};
+			for (let p of s.points) {
+				newSmooth.points.push({X:(letter.width-1) - p.X,Y:p.Y});
+			}
+			inverted.smoothing.push(newSmooth);
+		}
+		// console.log('original smoothing ' + JSON.stringify(letter.smoothing));
+		// console.log('inverted smoothing ' + JSON.stringify(inverted.smoothing));
+	}
+	// console.log('original points ' + JSON.stringify(letter.points));
+	// console.log('inverted points ' + JSON.stringify(inverted.points));
 	return inverted;
 }
 function writeBlockLetter(letter,leftLength,rightLength) {
@@ -1288,7 +1309,7 @@ function smoothArea(pattern,dest,destX,destY,destLength) {
 				for (var sx=startX;sx<endX;sx++) {
 					for (var sy=startY;sy<endY;sy++) {
 						dest[sy][sx]=(pattern[suby][subx]==0)?0:1;
-						if (debug) console.log('adding smoothed val');
+						// if (debug) console.log('adding smoothed val');
 					}
 				}
 			}
