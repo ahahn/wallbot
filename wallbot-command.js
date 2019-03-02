@@ -315,6 +315,7 @@ replServer.defineCommand('write',{
 			console.log('curX ' + curX + ' curY ' + curY);
 			var first = true;
 			var letterX = curX;
+			var lineStartX = letterX;
 			var letterY = curY;
 			// var letterX = curX * mmFactor;
 			// var letterY = curY * mmFactor;
@@ -338,7 +339,7 @@ replServer.defineCommand('write',{
 						console.log('got slash-r');
 
 						// console.log('maxHeight is ' + maxHeight + ' curX ' + curX + ' letterX ' + letterX);
-						var xDiff = curX - (letterX);
+						var xDiff = curX - (lineStartX);
 						var yDiff = (maxHeight + 3) * scale;
 						console.log('xDiff ' + xDiff + ' yDiff ' + yDiff);
 						// commandList.push('g ' + xDiff + ' ' + yDiff);
