@@ -312,6 +312,8 @@ replServer.defineCommand('write',{
 			var control = false;
 			var maxHeight = -1;
 			var bottomLengths = null;
+			var plannedLeftLength = leftLength;
+			var plannedRightLength = rightLength;
 			for (let i = 0; i < message.length; i++) {
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
@@ -339,7 +341,9 @@ replServer.defineCommand('write',{
 							var lDiff = leftLength - bottomLengths.leftLength;
 							console.log('rDiff ' + rDiff + ' lDiff ' + lDiff);
 							commandList.push('r ' + rDiff);
+							plannedRightLength += rDiff;
 							commandList.push('l ' + lDiff);
+							plannedLeftLength += lDiff;
 						}
 						first = true;
 						bottomLengths = null;
@@ -369,10 +373,11 @@ replServer.defineCommand('write',{
 						}
 						var lengths = getLengthsForCoords(letterX,letterY);
 						console.log('letterX ' + letterX + ' letterY ' + letterY + ' got lengths ' + JSON.stringify(lengths));
+						console.log('planned lengths left ' + plannedLeftLength + ' right ' + plannedRightLength);
 						var doneLengths = writeBlockLetter(l,lengths.leftLength,lengths.rightLength);
 						console.log('done writing letter ' + message[i] + ' doneLengths ' + JSON.stringify(doneLengths));
-						leftLength = doneLengths.leftLength;
-						rightLength = doneLengths.rightLength;
+						plannedLeftLength = doneLengths.leftLength;
+						plannedRightLength = doneLengths.rightLength;
 						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
 						if (bottomLengths == null) {
 							bottomLengths = l.bottomLengths;
