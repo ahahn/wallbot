@@ -347,6 +347,7 @@ replServer.defineCommand('write',{
 						letterY += yDiff;
 
 						if (bottomLengths != null) {
+							console.log('newline bottomlengths is ' + JSON.stringify(bottomLengths));
 							var rDiff = Math.abs(plannedRightLength - (bottomLengths.rightLength + (2*scale)));
 							var lDiff = Math.abs(plannedLeftLength - (bottomLengths.leftLength + (2*scale)));
 							console.log('rDiff ' + rDiff + ' lDiff ' + lDiff);
@@ -392,6 +393,7 @@ replServer.defineCommand('write',{
 						plannedRightLength = doneLengths.rightLength;
 						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
 						if (bottomLengths == null) {
+							console.log('setting as line bottomlengths');
 							bottomLengths = l.bottomLengths;
 						}
 						letterX += (l.width * scale);
