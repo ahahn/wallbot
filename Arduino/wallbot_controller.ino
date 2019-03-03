@@ -125,7 +125,7 @@ void loop() {
       myMotor1->release();
       myMotor2->release();
       Serial.println("{\"result\": {\"message\": \"motors freed\"}}");
-    } else if (c == 'r') {
+    } else if (c == 'r') { 
       int steps = Serial.parseInt();
       step(MOTOR_RIGHT,steps);
       Serial.print("{\"result\": {\"message\": \"right move complete\"},");
@@ -143,7 +143,7 @@ void loop() {
       Serial.print(", \"stepsLeft\": ");
       Serial.print(stepsLeft);
       Serial.println("}");
-    } else if (c == 'x') {
+    } else if (c == 'c') {
       int wval = Serial.parseInt();
       int hval = Serial.parseInt();
       canvasWidth = wval;
@@ -151,12 +151,12 @@ void loop() {
       curX = canvasWidth / 2;
       curY = canvasHeight / 2;
             
-      Serial.print("{\"result\": {\"message\":\"done c command\",");
+      Serial.print("{\"result\": {\"message\":\"done x command\",");
       Serial.print("\"canvasWidth\":");
       Serial.print(canvasWidth);
       Serial.print(", \"canvasHeight\":");
       Serial.print(canvasHeight);
-      Serial.print("\"positionX\":");
+      Serial.print(", \"positionX\":");
       Serial.print(curX);
       Serial.print(", \"positionY\":");
       Serial.print(curY);

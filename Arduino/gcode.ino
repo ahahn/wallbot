@@ -30,7 +30,7 @@ void step(int motor, int steps) {
     myMotor2->step(abs(steps), (steps < 0) ? MOTOR_LEFT_BACKWARD : MOTOR_LEFT_FORWARD, STEPPERCOIL);
   }
 }
-void goOrigin() {
+void goOriginRight() {
   if (stepsRight != 0) {
     #ifdef DEBUG
     if (debug > 0) {
@@ -43,6 +43,8 @@ void goOrigin() {
     step(MOTOR_RIGHT, stepsRight * -1);
     stepsRight = 0;
   }
+}
+void goOriginLeft() {
   if (stepsLeft != 0) {
     #ifdef DEBUG
     if (debug > 0) {
@@ -54,9 +56,19 @@ void goOrigin() {
     #endif
     step(MOTOR_LEFT, stepsLeft * -1);
     stepsLeft = 0;
-    curX = canvasWidth / 2;
-    curY = canvasHeight / 2;
   }
+}
+void goOrigin() {
+  // lengthen before shortening
+  if (stepsLeft > stepsRight) {
+    goOriginRight();
+    goOriginLeft();
+  } else {
+    goOriginLeft();
+    goOriginRight();
+  }
+  curX = canvasWidth / 2;
+  curY = canvasHeight / 2;
 }
 long getRightLength(int x, int y) {
   long rxdist = min(canvasWidth,canvasWidth - x);
