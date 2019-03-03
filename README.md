@@ -3,8 +3,10 @@
 
 This is the complete repo for my wallbot project.
 The wallbot is a simple two-motor Cartesian robot that draws on vertical surfaces.  I use it to draw on whiteboards and windows with dry erase markers.
-The designs directory has all of the laser cut designs to make the physical parts of the machine.
+
+The [designs directory](designs) has all of the laser cut designs to make the physical parts of the machine.
 Assembly instructions are included as well.
+
 Other components which are needed for the wallbot:
 1) Raspberry pi model 3 (other models will probably work) running raspbian or another linux with node.js installed.
 (https://www.amazon.com/Raspberry-Pi-RASPBERRYPI3-MODB-1GB-Model-Motherboard/dp/B01CD5VC92 plus a microSD card > 8GB and a higher amp power cable like this https://www.amazon.com/CanaKit-Raspberry-Supply-Adapter-Listed/dp/B00MARDJZ4 ) (about $55 all together)
