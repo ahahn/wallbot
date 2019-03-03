@@ -12,6 +12,7 @@ const port = new SerialPort(config.port, {
 const parser = new Readline();
 const replServer = repl.start({ prompt: '> '});
 var commandList = [];
+var sentCommands = [];
 
 var previewWriteStream;
 var scale = 8;
@@ -63,6 +64,15 @@ replServer.defineCommand('release',{
 		sendCommand("f");
 	}
 });
+replServer.defineCommand('replay',{
+	help: 'Display sent commands',
+	action() {
+		console.log('previously sent commands:')
+		for (let c of sentCommands) {
+			console.log(c);
+		}
+	}
+});
 replServer.defineCommand('stop',{
 	help: 'Remove any pending commands',
 	action() {
@@ -103,6 +113,7 @@ replServer.defineCommand('font',{
 		let f = fontParam.trim();
 		if (f=='lineLetters'||
 			f=='block'||
+			f=='novalabs'||
 			f=='block_hollow') {
 
 			font = f;
@@ -115,6 +126,7 @@ replServer.defineCommand('font',{
 replServer.defineCommand('origin',{
 	help: 'Return to origin',
 	action() {
+		sendCommand("u");
 		sendCommand("o");
 		rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
 		leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
@@ -214,7 +226,7 @@ replServer.defineCommand('right',{
 		console.log('read dist',dist);
 		var c = dist.match(/-?\d+/g).map(Number);
 		console.log('distance ' + c[0] + ' rightLength now ' + rightLength);
-		changeRight(c[0]);
+		changeRight(c[0] * mmFactor);
 		// sendCommand('r ' + c[0] );
 	}
 });
@@ -324,6 +336,7 @@ replServer.defineCommand('write',{
 			var bottomLengths = null;
 			var plannedLeftLength = leftLength;
 			var plannedRightLength = rightLength;
+			console.log('initial planned lengths left ' + plannedLeftLength + ' right ' + plannedRightLength);
 			for (let i = 0; i < message.length; i++) {
 				let j = 0;
 				console.log('writing :' + message[i] + ':');
@@ -345,11 +358,21 @@ replServer.defineCommand('write',{
 						// commandList.push('g ' + xDiff + ' ' + yDiff);
 						letterX += xDiff;
 						letterY += yDiff;
+						console.log('planned lengths left ' + plannedLeftLength + ' right ' + plannedRightLength);
+						var changeLengths = getLengthsForCoords(letterX, letterY);
+						console.log('changeLengths ' + JSON.stringify(changeLengths));
+						var rDiff = ((changeLengths.rightLength + (2*scale)) - plannedRightLength) * mmFactor;
+						var lDiff = ((changeLengths.leftLength + (2*scale)) - plannedLeftLength) * mmFactor;
+						console.log('rDiff ' + rDiff + ' lDiff ' + lDiff);
+						commandList.push('r ' + rDiff);
+						plannedRightLength += rDiff;
+						commandList.push('l ' + lDiff);
+						plannedLeftLength += lDiff;
 
-						if (bottomLengths != null) {
+						if (false && (bottomLengths != null)) {
 							console.log('newline bottomlengths is ' + JSON.stringify(bottomLengths));
-							var rDiff = Math.abs(plannedRightLength - (bottomLengths.rightLength + (2*scale)));
-							var lDiff = Math.abs(plannedLeftLength - (bottomLengths.leftLength + (2*scale)));
+							var rDiff = (bottomLengths.rightLength + (2*scale)) - plannedRightLength;
+							var lDiff = (bottomLengths.leftLength + (2*scale)) - plannedLeftLength;
 							console.log('rDiff ' + rDiff + ' lDiff ' + lDiff);
 							commandList.push('r ' + rDiff);
 							plannedRightLength += rDiff;
@@ -391,6 +414,7 @@ replServer.defineCommand('write',{
 						var doneLengths = writeBlockLetter(l,lengths.leftLength,lengths.rightLength);
 						plannedLeftLength = doneLengths.leftLength;
 						plannedRightLength = doneLengths.rightLength;
+						console.log('updated planned lengths left ' + plannedLeftLength + ' right ' + plannedRightLength);
 						console.log('letter bottomLengths ' + JSON.stringify(l.bottomLengths));
 						if (bottomLengths == null) {
 							console.log('setting as line bottomlengths');
@@ -743,7 +767,7 @@ replServer.defineCommand('left',{
 		console.log('read dist',dist);
 		var c = dist.match(/-?\d+/g).map(Number);
 		console.log('distance ' + c[0] + ' leftLength now ' + leftLength);
-		changeLeft(c[0]);
+		changeLeft(c[0] * mmFactor);
 		// sendCommand('l ' + c[0] );
 	}
 });
@@ -795,6 +819,7 @@ parser.on('data', function(data) {
 });
 
 function sendCommand(command) {
+	sentCommands.push(command);
 	if (command.startsWith("#")) {
 		console.log(command);
 		return;
@@ -1036,6 +1061,7 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 	var lastX = firstX + letterWidth;
 	var lastY = firstY + letterHeight;
 	// console.log('lastX ' + lastX + ' lastY ' + lastY);
+	console.log('calculating done lengths from X ' + lastX + ' Y ' + firstY);
 	var doneLengths = getLengthsForCoords(lastX, firstY);
 	var bottomLengths = getLengthsForCoords(firstX, lastY);
 	// var doneLengths = getLengthsForCoords(lastX * mmFactor, firstY * mmFactor);
@@ -1061,18 +1087,21 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 		if (debug) console.log('newX ' + newX + ' newY ' + newY);
 		var changes = 0;
 		var rightChanges = false;
+		var firstChange = true;
 		while ((changes < 10)&& ((newY < 0)||(newY >= letterHeight))) {
 			changes++;
 			if (debug)
 			console.log('adjusting from newX ' + newX + ' newY ' + newY);
 			if (leftLength <= lastLengths.leftLength) {
 				if (newY < 0) {
+					firstChange = false;
 					rightLength += spacing;
 					rightChanges = true;
 					if (debug)
 					console.log('increased rightLength to ' + rightLength);
 				}
 				if (newY >= letterHeight) {
+					firstChange = false;
 					rightChanges = true;
 					rightLength -= spacing / 4;
 					if (debug)
@@ -1098,11 +1127,14 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 			console.log('adjusting from newX ' + newX + ' newY ' + newY);
 			if (rightLength <= lastLengths.rightLength) {
 				if (newX < 0) {
+					firstChange = false;
 					leftLength += spacing;
 					if (debug)
 					console.log('increased leftLength to ' + leftLength);
 				}
 				if (newX >= letterWidth) {
+					// don't loop infinitely
+					if (firstChange) break;
 					leftLength -= spacing;
 					if (debug)
 					console.log('decreased leftLength to ' + leftLength);
