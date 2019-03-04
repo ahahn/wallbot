@@ -1134,7 +1134,7 @@ function sliceLetter(letterParam,leftLength,rightLength) {
 				}
 				if (newX >= letterWidth) {
 					// don't loop infinitely
-					if (firstChange) break;
+					// if (firstChange) break;
 					leftLength -= spacing;
 					if (debug)
 					console.log('decreased leftLength to ' + leftLength);
