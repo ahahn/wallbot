@@ -39,6 +39,7 @@ var liftGap = 20;
 var unidirectional = false;
 var pause = false;
 var invert = false;
+var bislice = false;
 
 var rightLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight/2, 2))) + 10;
 var leftLength = Math.round(Math.sqrt(Math.pow(canvasWidth / 2, 2)+Math.pow(canvasHeight /2, 2))) + 10;
@@ -268,6 +269,13 @@ replServer.defineCommand('lift',{
 	action() {
 		lift = !lift;
 		console.log('lift ' + lift);
+	}
+});
+replServer.defineCommand('bislice',{
+	help: 'Slice object from left and right',
+	action() {
+		bislice = !bislice;
+		console.log('bislice ' + bislice);
 	}
 });
 replServer.defineCommand('uni',{
