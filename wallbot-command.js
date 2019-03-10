@@ -112,11 +112,7 @@ replServer.defineCommand('font',{
 	help: 'Set the font to use- lineLetters, block, block_hollow',
 	action(fontParam) {
 		let f = fontParam.trim();
-		if (f=='lineLetters'||
-			f=='block'||
-			f=='novalabs'||
-			f=='block_hollow') {
-
+		if (f in letters) {
 			font = f;
 			console.log('font now ' + font);
 		} else {
